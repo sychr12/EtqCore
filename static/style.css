@@ -1,0 +1,2196 @@
+:root {
+    --ink: #000000;
+    --muted: #64748b;
+    --blue: #0b6bcb;
+    --blue2: #38bdf8;
+    --navy: #072a4a;
+    --sky: #eaf6ff;
+    --line: #dbe5ef;
+    --bg: #f3f7fb;
+    --surface: #fff;
+    --success: #16865c;
+    --danger: #c9364b;
+    --warning: #d97706;
+    --shadow: 0 20px 55px rgba(15, 42, 71, .09)
+}
+
+* {
+    box-sizing: border-box
+}
+
+html {
+    scroll-behavior: smooth
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at 10% 0, #dff3ff 0, transparent 25%), radial-gradient(circle at 90% 10%, #e7e8ff 0, transparent 25%), var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 Inter, Segoe UI, system-ui, sans-serif
+}
+
+.ambient {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: -1
+}
+
+.ambient:before,
+.ambient:after {
+    content: "";
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .2;
+    animation: drift 12s ease-in-out infinite alternate
+}
+
+.ambient:before {
+    background: #38bdf8;
+    left: -120px;
+    top: 25%
+}
+
+.ambient:after {
+    background: #818cf8;
+    right: -130px;
+    top: 55%;
+    animation-delay: -5s
+}
+
+.topbar {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(120deg, #062a4a, #075985 58%, #087db8);
+    color: #fff;
+    padding: 20px clamp(20px, 4vw, 54px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 12px 35px rgba(7, 47, 82, .24)
+}
+
+.topbar:after {
+    content: "";
+    position: absolute;
+    inset: -100% -20%;
+    background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, .12) 50%, transparent 58%);
+    animation: shine 8s linear infinite
+}
+
+.brand {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 13px;
+    align-items: center
+}
+
+.brandMark {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(145deg, #fff, #dff4ff);
+    color: #075985;
+    font-weight: 900;
+    letter-spacing: -1px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+    animation: float 4s ease-in-out infinite
+}
+
+.brand h1 {
+    font-size: 22px;
+    line-height: 1.1;
+    margin: 0
+}
+
+.brand small {
+    display: block;
+    opacity: .76;
+    margin-top: 4px
+}
+
+.headerMeta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px
+}
+
+.chip {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .13);
+    border: 1px solid rgba(255, 255, 255, .22);
+    font-size: 12px;
+    font-weight: 800;
+    backdrop-filter: blur(8px)
+}
+
+#nextTop {
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: #fff;
+    color: #075985;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .12)
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    gap: 6px;
+    background: rgba(255, 255, 255, .86);
+    backdrop-filter: blur(16px);
+    padding: 11px clamp(18px, 4vw, 52px);
+    border-bottom: 1px solid rgba(203, 213, 225, .75);
+    box-shadow: 0 5px 20px rgba(15, 42, 71, .04)
+}
+
+nav button {
+    background: transparent;
+    color: #52657a;
+    border-radius: 11px;
+    padding: 10px 15px
+}
+
+nav button.active {
+    background: linear-gradient(135deg, #e0f2fe, #e8edff);
+    color: #075985;
+    box-shadow: inset 0 0 0 1px #c7e9fb
+}
+
+.navIcon {
+    display: inline-block;
+    margin-right: 7px;
+    transition: transform .25s
+}
+
+nav button.active .navIcon {
+    transform: scale(1.2) rotate(-6deg)
+}
+
+main {
+    max-width: 1480px;
+    margin: auto;
+    padding: 28px clamp(16px, 3vw, 38px) 60px
+}
+
+.tab {
+    display: none
+}
+
+.tab.active {
+    display: block;
+    animation: tabIn .42s cubic-bezier(.2, .8, .2, 1)
+}
+
+.sectionIntro {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    margin: 0 2px 18px
+}
+
+.eyebrow {
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    text-transform: uppercase
+}
+
+.sectionIntro h2 {
+    font-size: clamp(22px, 3vw, 31px);
+    margin: 4px 0 2px;
+    letter-spacing: -.03em
+}
+
+.sectionIntro p {
+    margin: 0;
+    color: var(--muted)
+}
+
+.liveBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--success);
+    font-weight: 800;
+    font-size: 12px;
+    background: #e9fbf3;
+    border: 1px solid #bcebd7;
+    padding: 8px 11px;
+    border-radius: 999px
+}
+
+.liveBadge i {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, .5);
+    animation: pulse 1.8s infinite
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: minmax(410px, .92fr) minmax(520px, 1.35fr);
+    gap: 24px;
+    align-items: start
+}
+
+.card {
+    background: rgba(255, 255, 255, .94);
+    border: 1px solid rgba(219, 229, 239, .92);
+    border-radius: 20px;
+    padding: 23px;
+    box-shadow: var(--shadow);
+    transition: transform .28s, box-shadow .28s, border-color .28s
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 65px rgba(15, 42, 71, .13);
+    border-color: #cbddea
+}
+
+.cardTitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+    margin: 0 0 18px
+}
+
+.cardIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #e0f2fe, #e8eaff);
+    color: #075985
+}
+
+.fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px
+}
+
+.span2 {
+    grid-column: span 2
+}
+
+label {
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: .025em;
+    color: #52657a;
+    display: block;
+    margin-bottom: 6px
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    border: 1px solid #cbd8e5;
+    border-radius: 11px;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--ink);
+    background: #fbfdff;
+    transition: border-color .2s, box-shadow .2s, transform .2s, background .2s
+}
+
+textarea {
+    min-height: 78px;
+    resize: vertical
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+    border-color: #9dc4df;
+    background: #fff
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 0;
+    border-color: #38a4e1;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, .14);
+    transform: translateY(-1px);
+    background: #fff
+}
+
+button,
+.button {
+    position: relative;
+    border: 0;
+    border-radius: 11px;
+    padding: 10px 14px;
+    font-weight: 800;
+    cursor: pointer;
+    background: #e9eff5;
+    color: #233a53;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform .18s, box-shadow .18s, filter .18s, opacity .18s
+}
+
+button:hover,
+.button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 20px rgba(15, 42, 71, .13);
+    filter: saturate(1.08)
+}
+
+button:active,
+.button:active {
+    transform: translateY(0) scale(.98)
+}
+
+button:disabled {
+    opacity: .55;
+    cursor: wait;
+    transform: none
+}
+
+button.primary {
+    background: linear-gradient(135deg, #0b72d2, #0b91cf);
+    color: #fff
+}
+
+button.print {
+    background: linear-gradient(135deg, #16865c, #1da66e);
+    color: #fff
+}
+
+.actions {
+    display: flex;
+    gap: 9px;
+    align-items: end;
+    flex-wrap: wrap;
+    margin-top: 17px
+}
+
+.note {
+    background: linear-gradient(120deg, #fff9ed, #fffdf8);
+    border: 1px solid #f8dfad;
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 12px;
+    color: #765022;
+    margin-top: 16px
+}
+
+.stage {
+    position: relative;
+    background: linear-gradient(145deg, #dce7f0, #cbd9e6);
+    min-height: 540px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    overflow: auto;
+    border-radius: 16px;
+    box-shadow: inset 0 2px 14px rgba(29, 62, 91, .12)
+}
+
+.stage:before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, .18) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .18) 1px, transparent 1px);
+    background-size: 18px 18px;
+    opacity: .4
+}
+
+.label {
+    container-type: size;
+    z-index: 1;
+    background: #fff;
+    color: #000000;
+    width: min(100%, 900px);
+    aspect-ratio: 100/60;
+    border-radius: 4cqw;
+    padding: 3cqh 2.4cqw;
+    position: relative;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 18px 40px rgba(15, 42, 71, .24);
+    transition: aspect-ratio .35s, width .35s, box-shadow .35s
+}
+
+.label:hover {
+    box-shadow: 0 24px 55px rgba(15, 42, 71, .3)
+}
+
+.frame {
+    position: absolute;
+    inset: 3cqh 2.4cqw;
+    border: .55cqw solid #000000;
+    border-radius: 3cqw;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    background: #fff
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    background: #fff
+}
+
+.brandBand {
+    flex: none;
+    width: 9cqw;
+    background: #000000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    letter-spacing: .12em;
+    overflow: hidden;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: min(2.3cqw, 10cqh)
+}
+
+.topRow {
+    flex: none;
+    display: flex;
+    align-items: stretch;
+    height: 34cqh;
+    border-bottom: .35cqw solid #000000
+}
+
+.qr {
+    position: relative;
+    flex: none;
+    width: 34cqh;
+    padding: 1.5cqw;
+    box-sizing: border-box;
+    border-right: .35cqw solid #000000;
+    transition: width .35s;
+    animation: qrReveal .45s ease
+}
+
+.qr img {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated
+}
+
+.qr.empty {
+    background: repeating-conic-gradient(#d6dee6 0 25%, white 0 50%) 50%/18px 18px
+}
+
+.badgeStack {
+    flex: none;
+    width: 15cqw;
+    background: #000000;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .8cqh;
+    border-right: .35cqw solid #000000;
+    overflow: hidden
+}
+
+.badgeStack .badgeSmall {
+    font-weight: 800;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: min(2cqw, 7cqh)
+}
+
+.badgeStack .badgeBig {
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: min(3.4cqw, 11cqh)
+}
+
+.badge2 {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden
+}
+
+.badge2+.badge2 {
+    border-top: .28cqw solid #ffffff33
+}
+
+.badgeValue {
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    letter-spacing: .03em;
+    font-size: min(3cqw, 9cqh)
+}
+
+#tipoBadge .badgeValue {
+    font-size: min(2cqw, 6cqh)
+}
+
+#selBadge .badgeValue {
+    font-size: min(3.6cqw, 12cqh)
+}
+
+.dataTable {
+    position: relative;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    overflow: hidden;
+    min-width: 0
+}
+
+.dataTable .cell {
+    border-right: .28cqw solid #000000;
+    border-bottom: .28cqw solid #000000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1.4cqw;
+    overflow: hidden
+}
+
+.dataTable .cell:nth-child(2n) {
+    border-right: 0
+}
+
+.dataTable .cell:nth-child(n+3) {
+    border-bottom: 0
+}
+
+.dataTable .cell .cellLabel {
+    font-weight: 700;
+    letter-spacing: .02em;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    align-self: flex-start;
+    font-size: min(1.35cqw, 4cqh)
+}
+
+.dataTable .cell .cellValue {
+    font-weight: 900;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    align-self: flex-start;
+    font-size: min(2.5cqw, 6.5cqh)
+}
+
+.dataTable .cell.big .cellValue {
+    line-height: 1;
+    font-size: min(3.4cqw, 9.5cqh)
+}
+
+.dataTable .subRow {
+    display: flex;
+    align-items: baseline;
+    gap: .3cqw;
+    overflow: hidden
+}
+
+.dataTable .subRow+.subRow {
+    border-top: .22cqw solid #000000;
+    margin-top: 2px;
+    padding-top: 2px
+}
+
+.titleRow {
+    flex: none;
+    border-bottom: .35cqw solid #000000;
+    padding: 1.2cqh 1.6cqw;
+    overflow: hidden;
+    display: flex;
+    align-items: center
+}
+
+.titleText {
+    flex: 1;
+    min-width: 0;
+    font-weight: 900;
+    line-height: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    border-bottom: 0;
+    padding: 1.2cqh 1.6cqw;
+    font-size: min(6.6cqw, 12.5cqh);
+    text-overflow: ellipsis
+}
+
+.codRow {
+    flex: none;
+    display: flex;
+    border-bottom: .35cqw solid #000000;
+    overflow: hidden
+}
+
+.codRow .codMain {
+    flex: none;
+    max-width: 42cqw;
+    display: flex;
+    align-items: center;
+    gap: .6cqw;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    padding: 1cqh 1.6cqw;
+    border-right: .3cqw solid #000000;
+    font-size: min(4.6cqw, 10.5cqh);
+    overflow: hidden
+}
+
+.codRow .codStack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1.6cqw;
+    overflow: hidden;
+    min-width: 0
+}
+
+.codRow .codStack .codLabel {
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    font-size: min(1.8cqw, 4.4cqh)
+}
+
+.codRow .codStack .codValue {
+    font-weight: 900;
+    line-height: 1.1;
+    white-space: nowrap;
+    font-size: min(3.6cqw, 8.6cqh);
+    overflow: hidden
+}
+
+.bottomRow {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0
+}
+
+.medidas {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: .8cqw;
+    padding: 0 1.6cqw;
+    border-right: .3cqw solid #000000;
+    overflow: hidden;
+    min-width: 0
+}
+
+.medidas .medIcon {
+    flex: none;
+    width: min(4.4cqw, 11cqh);
+    height: min(4.4cqw, 11cqh);
+    color: #000000
+}
+
+.medidas .medLabel {
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: min(2cqw, 4.6cqh);
+    margin-right: .2cqw
+}
+
+.medidas .medValue {
+    font-weight: 900;
+    white-space: nowrap;
+    font-size: min(3.4cqw, 7.8cqh);
+    overflow: hidden
+}
+
+.logoBox {
+    flex: none;
+    width: 34cqw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .8cqw;
+    padding: 0 1.2cqw;
+    overflow: hidden
+}
+
+.logoBox .logoIcon {
+    flex: none;
+    width: min(5cqw, 12cqh);
+    height: min(5cqw, 12cqh);
+    color: #000000
+}
+
+.logoBox .logoText {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+    color: #000000;
+    overflow: hidden
+}
+
+.logoBox .logoText strong {
+    font-size: min(3.2cqw, 8cqh);
+    letter-spacing: .02em;
+    white-space: nowrap
+}
+
+.logoBox .logoText small {
+    font-size: min(1.1cqw, 3cqh);
+    color: #5a6b80;
+    letter-spacing: .03em;
+    white-space: nowrap
+}
+
+.qrCaption {
+    display: none
+}
+
+.status {
+    min-height: 21px;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 750;
+    color: var(--muted);
+    transition: color .2s
+}
+
+.status.error {
+    color: var(--danger)
+}
+
+.status.ok {
+    color: var(--success)
+}
+
+.settings {
+    max-width: 820px
+}
+
+.settings .fields {
+    grid-template-columns: repeat(2, 1fr)
+}
+
+.printGroup {
+    display: flex;
+    align-items: end;
+    gap: 8px
+}
+
+.printGroup label {
+    white-space: nowrap;
+    margin: 0 0 10px
+}
+
+.printGroup input {
+    width: 82px
+}
+
+.fileButton {
+    display: inline-block;
+    margin: 0;
+    font-size: 15px;
+    color: #1e293b
+}
+
+.fileButton input {
+    display: none
+}
+
+.printFile {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fdba74
+}
+
+.smallButton {
+    padding: 6px 9px;
+    font-size: 11px
+}
+
+.tableWrap {
+    overflow: auto;
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff
+}
+
+th,
+td {
+    text-align: left;
+    border-bottom: 1px solid #e7edf3;
+    padding: 11px 10px
+}
+
+th {
+    position: sticky;
+    top: 0;
+    background: #f4f8fb;
+    color: #52657a;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .06em
+}
+
+tbody tr {
+    transition: background .18s
+}
+
+tbody tr:hover {
+    background: #f4faff
+}
+
+.badge {
+    border-radius: 99px;
+    padding: 4px 8px;
+    font-weight: 800;
+    background: #dcfce7;
+    color: #166534
+}
+
+.badge.fail {
+    background: #fee2e2;
+    color: #991b1b
+}
+
+.busyOverlay,
+.modalBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 28, 49, .48);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s, visibility .25s
+}
+
+.busyOverlay.show,
+.modalBackdrop.show {
+    opacity: 1;
+    visibility: visible
+}
+
+.busyCard,
+.modalCard {
+    width: min(90vw, 390px);
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .28);
+    transform: translateY(14px) scale(.96);
+    transition: transform .3s
+}
+
+.show .busyCard,
+.show .modalCard {
+    transform: none
+}
+
+.spinner {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    border: 5px solid #dff2fd;
+    border-top-color: #0b78d1;
+    animation: spin .85s linear infinite
+}
+
+.busyCard h3,
+.modalCard h3 {
+    margin: 0 0 7px;
+    font-size: 19px
+}
+
+.busyCard p,
+.modalCard p {
+    margin: 0;
+    color: var(--muted)
+}
+
+.loadingDots span {
+    display: inline-block;
+    animation: dots 1.2s infinite
+}
+
+.loadingDots span:nth-child(2) {
+    animation-delay: .15s
+}
+
+.loadingDots span:nth-child(3) {
+    animation-delay: .3s
+}
+
+.modalActions {
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 22px
+}
+
+.toasts {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 130;
+    display: grid;
+    gap: 10px;
+    width: min(390px, calc(100vw - 32px))
+}
+
+.toast {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    padding: 13px 15px;
+    box-shadow: 0 18px 50px rgba(15, 42, 71, .18);
+    animation: toastIn .35s cubic-bezier(.2, .8, .2, 1)
+}
+
+.toast.out {
+    animation: toastOut .3s forwards
+}
+
+.toastIcon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    background: #e7f8f1;
+    color: var(--success);
+    font-weight: 900
+}
+
+.toast.error .toastIcon {
+    background: #fee9ed;
+    color: var(--danger)
+}
+
+.toast.info .toastIcon {
+    background: #e4f3ff;
+    color: var(--blue)
+}
+
+.toastText strong {
+    display: block;
+    font-size: 13px
+}
+
+.toastText span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px
+}
+
+.toast:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--blue);
+    animation: toastProgress 4.5s linear forwards
+}
+
+.toast.error:after {
+    background: var(--danger)
+}
+
+.toast.ok:after {
+    background: var(--success)
+}
+
+@keyframes tabIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+@keyframes pulse {
+    70% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0)
+    }
+}
+
+@keyframes shine {
+    to {
+        transform: translateX(70%)
+    }
+}
+
+@keyframes drift {
+    to {
+        transform: translate(90px, 60px) scale(1.15)
+    }
+}
+
+@keyframes float {
+    50% {
+        transform: translateY(-4px) rotate(2deg)
+    }
+}
+
+@keyframes dots {
+    50% {
+        transform: translateY(-4px);
+        opacity: .45
+    }
+}
+
+@keyframes qrReveal {
+    from {
+        opacity: 0;
+        transform: scale(.96)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(25px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+@keyframes toastOut {
+    to {
+        opacity: 0;
+        transform: translateX(30px)
+    }
+}
+
+@keyframes toastProgress {
+    from {
+        width: 100%
+    }
+
+    to {
+        width: 0
+    }
+}
+
+@media(max-width:980px) {
+    .grid {
+        grid-template-columns: 1fr
+    }
+
+    .stage {
+        min-height: 430px
+    }
+
+    .headerMeta .chip {
+        display: none
+    }
+}
+
+@media(max-width:650px) {
+    .topbar {
+        padding: 16px
+    }
+
+    .brandMark {
+        width: 40px;
+        height: 40px
+    }
+
+    .brand h1 {
+        font-size: 18px
+    }
+
+    .brand small {
+        display: none
+    }
+
+    nav {
+        overflow: auto;
+        padding: 9px 12px
+    }
+
+    nav button {
+        white-space: nowrap
+    }
+
+    .fields,
+    .settings .fields {
+        grid-template-columns: 1fr
+    }
+
+    .span2 {
+        grid-column: span 1
+    }
+
+    .sectionIntro {
+        align-items: start;
+        gap: 12px
+    }
+
+    .liveBadge {
+        display: none
+    }
+
+    .card {
+        padding: 17px;
+        border-radius: 16px
+    }
+
+    .stage {
+        min-height: 340px;
+        padding: 14px
+    }
+
+    .printGroup {
+        width: 100%;
+        justify-content: space-between
+    }
+
+    .toasts {
+        right: 16px;
+        bottom: 16px
+    }
+}
+
+@media(prefers-reduced-motion:reduce) {
+
+    *,
+    *:before,
+    *:after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important
+    }
+}
+
+/* =========================================================
+   AJUSTES DA ETIQUETA - CAPA/BC, CÓDIGOS E DADOS
+   ========================================================= */
+
+/* Área de classificação CAPA / BC */
+.classificationBox {
+    flex: none;
+    width: 15cqw;
+    background: #000;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .8cqh;
+    border-right: .35cqw solid #000;
+    overflow: hidden;
+    text-align: center;
+}
+
+.classificationBox .classificationType {
+    font-weight: 800;
+    letter-spacing: .04em;
+    font-size: min(2cqw, 7cqh);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.classificationBox .classificationValue {
+    font-weight: 900;
+    font-size: min(3.6cqw, 12cqh);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Quando a informação for "CAPA BC" em um único campo */
+.classificationBox.single {
+    gap: 0;
+}
+
+.classificationBox.single .classificationValue {
+    font-size: min(3.2cqw, 10cqh);
+}
+
+/* Valores longos não quebram a composição da etiqueta */
+.dataTable .cell .cellValue,
+.codRow .codMain,
+.codRow .codStack .codValue,
+.medidas .medValue {
+    text-overflow: ellipsis;
+}
+
+/* Campo de código principal */
+.codRow .codMain {
+    min-width: 0;
+}
+
+.codRow .codMain .codLabel {
+    flex: none;
+}
+
+.codRow .codMain .codValue {
+    min-width: 0;
+}
+
+/* Nome do produto em destaque */
+.titleRow .titleText.productTitle {
+    font-size: min(6.6cqw, 12.5cqh);
+    letter-spacing: .01em;
+}
+
+/* Desenho dimensional */
+.medidasWithDrawing {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 1cqw;
+    padding: 0 1.6cqw;
+    border-right: .3cqw solid #000;
+    overflow: hidden;
+}
+
+.medidasWithDrawing .dimensionDrawing {
+    flex: none;
+    width: min(7cqw, 16cqh);
+    height: min(7cqw, 16cqh);
+}
+
+.medidasWithDrawing .dimensionContent {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.medidasWithDrawing .medLabel {
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: min(2cqw, 4.6cqh);
+}
+
+.medidasWithDrawing .medValue {
+    font-weight: 900;
+    white-space: nowrap;
+    font-size: min(3.4cqw, 7.8cqh);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* QR e conteúdo devem continuar nítidos na impressão */
+@media print {
+    .label {
+        box-shadow: none;
+    }
+
+    .label:hover {
+        box-shadow: none;
+    }
+
+    .stage {
+        background: #fff;
+        box-shadow: none;
+    }
+
+    .stage:before {
+        display: none;
+    }
+}
+
+/* ===== CORREÇÃO FINAL DO LAYOUT DA ETIQUETA ===== */
+.label {
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+    border: .55cqw solid #000;
+    border-radius: 3cqw;
+}
+
+.label .content {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: calc(100% - 9cqw);
+    height: 100%;
+}
+
+.label .brandBand {
+    flex: 0 0 9cqw;
+    width: 9cqw;
+    height: 100%;
+    border-left: .35cqw solid #000;
+}
+
+.label .topRow {
+    height: 34cqh;
+    min-height: 0;
+}
+
+.label .titleText {
+    flex: 0 0 18cqh;
+    height: 18cqh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 1cqh 1.6cqw;
+    border-bottom: .35cqw solid #000;
+    font-size: min(6.6cqw, 12.5cqh);
+}
+
+.label .codRow {
+    flex: 0 0 17cqh;
+    height: 17cqh;
+}
+
+.label .bottomRow {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.label .medidas {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.label .logoBox {
+    flex: 0 0 42%;
+    width: 42%;
+}
+
+/* Visual idêntico ao modelo: CAPA / BC */
+#tipoBadge .badgeValue {
+    font-size: min(2.8cqw, 6.8cqh);
+}
+
+#selBadge .badgeValue {
+    font-size: min(3.8cqw, 9.5cqh);
+}
+
+/* Código principal e código interno ficam lado a lado */
+.label .codRow .codMain {
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+
+.label .codRow .codStack {
+    flex: 1 1 50%;
+}
+
+/* Evita que a descrição seja comprimida até virar uma linha minúscula */
+.label .titleText[data-out="descricao"] {
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+/* O QR ocupa uma caixa quadrada limpa */
+.label .qr {
+    width: 34cqh;
+    padding: 1.6cqh;
+}
+
+.label .qr img {
+    object-fit: contain;
+}
+
+/* A faixa preta permanece somente na lateral direita */
+.label .brandBand {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+@media (max-width: 900px) {
+    .label .titleText {
+        font-size: min(6.2cqw, 12cqh);
+    }
+}
+
+/* =========================================================
+   MODELO FINAL — REPRODUÇÃO DA ETIQUETA DE REFERÊNCIA
+   ========================================================= */
+.label {
+    width: min(100%, 1000px);
+    aspect-ratio: 100 / 58.35;
+    padding: 0;
+    border: .42cqw solid #111;
+    border-radius: 2.7cqw;
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    box-shadow: 0 18px 40px rgba(15,42,71,.24);
+}
+
+.label .content {
+    width: calc(100% - 7.4cqw);
+    height: 100%;
+    flex: 1 1 auto;
+}
+
+.label .brandBand {
+    flex: 0 0 7.4cqw;
+    width: 7.4cqw;
+    height: 100%;
+    border-left: .32cqw solid #111;
+    background: #000000;
+    font-size: min(2.55cqw, 8.8cqh);
+    letter-spacing: .13em;
+}
+
+.label .topRow {
+    height: 39.2cqh;
+    border-bottom: .3cqw solid #111;
+}
+
+.label .qr {
+    width: 26.2cqh;
+    padding: 2.1cqh 1.9cqw;
+    border-right: .3cqw solid #111;
+}
+
+.label .badgeStack {
+    width: 13.2cqw;
+    background: #000000;
+    border-right: .3cqw solid #111;
+}
+
+.label .badge2 + .badge2 {
+    border-top: .28cqw solid rgba(255,255,255,.32);
+}
+
+.label #tipoBadge .badgeValue {
+    font-size: min(3.25cqw, 7.7cqh);
+}
+
+.label #selBadge .badgeValue {
+    font-size: min(3.65cqw, 8.8cqh);
+}
+
+.label .dataTable {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.label .dataTable .cell {
+    padding: 0 1.55cqw;
+    border-color: #111;
+}
+
+.label .dataTable .cell .cellLabel {
+    font-size: min(1.45cqw, 3.6cqh);
+    font-weight: 800;
+    color: #111;
+}
+
+.label .dataTable .cell .cellValue {
+    font-size: min(3.15cqw, 7.6cqh);
+    font-weight: 900;
+    color: #111;
+}
+
+.label .dataTable .cell.big .cellValue {
+    font-size: min(4.15cqw, 9.8cqh);
+}
+
+.label .dataTable .subRow {
+    gap: .35cqw;
+}
+
+.label .dataTable .subRow + .subRow {
+    margin-top: .4cqh;
+    padding-top: .45cqh;
+    border-top: .22cqw solid #111;
+}
+
+.label .titleText.productTitle {
+    height: 19.6cqh;
+    flex: 0 0 19.6cqh;
+    padding: 0 2.4cqw;
+    display: flex;
+    align-items: center;
+    border-bottom: .3cqw solid #111;
+    font-size: min(6.35cqw, 12.2cqh);
+    line-height: 1;
+    letter-spacing: -.015em;
+    color: #111;
+}
+
+.label .codRow {
+    height: 21.1cqh;
+    flex: 0 0 21.1cqh;
+    border-bottom: .3cqw solid #111;
+}
+
+.label .codRow .codMain {
+    flex: 0 0 52.7%;
+    max-width: 52.7%;
+    gap: .8cqw;
+    padding: 0 2.5cqw;
+    border-right: .3cqw solid #111;
+    font-size: min(4.45cqw, 10.1cqh);
+}
+
+.label .codMain .codLabel {
+    font-weight: 500;
+    font-size: .72em;
+}
+
+.label .codMain .codValueMain {
+    font-weight: 900;
+}
+
+.label .codRow .codStack {
+    padding: 0 2.2cqw;
+}
+
+.label .codRow .codStack .codLabel {
+    font-size: min(2.05cqw, 4.6cqh);
+    font-weight: 800;
+}
+
+.label .codRow .codStack .codValue {
+    margin-top: .6cqh;
+    font-size: min(3.75cqw, 8.9cqh);
+}
+
+.label .bottomRow {
+    height: 20.1cqh;
+    flex: 1 1 20.1cqh;
+}
+
+.label .medidas {
+    flex: 0 0 57.1%;
+    width: 57.1%;
+    padding: 0 1.7cqw;
+    gap: 1.2cqw;
+    border-right: .3cqw solid #111;
+}
+
+.label .medIcon {
+    width: min(5.8cqw, 14.5cqh);
+    height: min(5.8cqw, 14.5cqh);
+}
+
+.label .medContent {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    justify-content: center;
+}
+
+.label .medidas .medLabel {
+    font-size: min(2.05cqw, 4.6cqh);
+    font-weight: 800;
+}
+
+.label .medidas .medValue {
+    font-size: min(3.65cqw, 8.8cqh);
+    font-weight: 900;
+    line-height: 1.05;
+}
+
+.label .logoBox {
+    flex: 1 1 auto;
+    width: auto;
+    gap: 1cqw;
+    padding: 0 1.7cqw;
+    justify-content: center;
+}
+
+.label .logoBox .logoIcon {
+    width: min(6.2cqw, 14.5cqh);
+    height: min(6.2cqw, 14.5cqh);
+}
+
+.label .logoBox .logoText strong {
+    font-size: min(3.55cqw, 8.6cqh);
+    font-weight: 500;
+    letter-spacing: .02em;
+}
+
+.label .logoBox .logoText small {
+    font-size: min(1.25cqw, 3.1cqh);
+    color: #111;
+    letter-spacing: .04em;
+}
+
+@media (max-width: 900px) {
+    .label .titleText.productTitle { font-size: min(6.1cqw, 12cqh); }
+}
+
+
+/* =========================================================
+   AJUSTE FINAL — ETIQUETA PRETA / CÓDIGOS GRANDES
+   ========================================================= */
+.label,
+.label .content,
+.label .brandBand {
+    background: #fff;
+    color: #000;
+}
+
+.label {
+    border-color: #000;
+}
+
+.label .brandBand,
+.label .badgeStack {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+
+.label .brandBand {
+    flex-basis: 7.4cqw;
+    width: 7.4cqw;
+}
+
+/* COD principal: número realmente grande, como na referência */
+.label .codRow .codMain {
+    flex: 0 0 52.7%;
+    max-width: 52.7%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 1.1cqw;
+    padding: 0 2.4cqw;
+    border-right: .3cqw solid #000;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 1em;
+}
+
+.label .codMain .codLabelMain {
+    flex: none;
+    font-size: min(3.05cqw, 7.2cqh);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.label .codMain .codValueMain {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+    font-size: min(5.9cqw, 13.2cqh);
+    font-weight: 900;
+    line-height: .95;
+    letter-spacing: -.02em;
+}
+
+/* COD PROD também grande */
+.label .codRow .codStack {
+    min-width: 0;
+    padding: 0 2.1cqw;
+}
+
+.label .codRow .codStack .codLabel {
+    flex: none;
+    font-size: min(2.2cqw, 5.1cqh);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.label .codRow .codStack .codValue {
+    display: block;
+    min-width: 0;
+    margin-top: .65cqh;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+    font-size: min(4.65cqw, 10.7cqh);
+    font-weight: 900;
+    line-height: .95;
+    letter-spacing: -.02em;
+}
+
+/* Nome do produto grande e centralizado na faixa */
+.label .titleText.productTitle,
+.label .titleText[data-out="descricao"] {
+    flex: 0 0 19.6cqh;
+    height: 19.6cqh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 2.4cqw;
+    color: #000;
+    font-size: min(6.35cqw, 12.2cqh);
+    font-weight: 900;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+}
+
+/* Preto absoluto nos blocos escuros da referência */
+.label .badgeStack,
+.label .brandBand {
+    background: #000 !important;
+}
+
+/* Mantém o QR e os separadores em preto */
+.label .qr,
+.label .dataTable .cell,
+.label .codRow,
+.label .bottomRow,
+.label .medidas {
+    border-color: #000;
+}
+
+@media (max-width: 900px) {
+    .label .codMain .codValueMain {
+        font-size: min(5.5cqw, 12.5cqh);
+    }
+    .label .codRow .codStack .codValue {
+        font-size: min(4.35cqw, 10cqh);
+    }
+}
+
+/* ===== AJUSTE FINAL: TEXTOS GRANDES E PRETO PURO ===== */
+.label,
+.label .content,
+.label .topRow,
+.label .titleText,
+.label .codRow,
+.label .bottomRow,
+.label .medidas,
+.label .logoBox,
+.label .dataTable,
+.label .dataTable .cell,
+.label .qr {
+    border-color: #000 !important;
+}
+
+.label .badgeStack,
+.label .brandBand {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+/* Produto: ocupar toda a faixa e ficar realmente grande */
+.label .titleText[data-out="descricao"] {
+    flex: 0 0 19.6cqh !important;
+    height: 19.6cqh !important;
+    width: 100% !important;
+    padding: 0 2.2cqw !important;
+    display: flex !important;
+    align-items: center !important;
+    font-size: min(8.2cqw, 15.5cqh) !important;
+    font-weight: 900 !important;
+    line-height: .92 !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+}
+
+/* COD: 7985 — grande */
+.label .codRow .codMain {
+    flex: 0 0 52.7% !important;
+    max-width: 52.7% !important;
+    padding: 0 2.2cqw !important;
+    gap: 1cqw !important;
+}
+.label .codMain .codLabelMain {
+    font-size: min(3.8cqw, 7.8cqh) !important;
+    font-weight: 800 !important;
+}
+.label .codMain .codValueMain {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: min(7.6cqw, 15.5cqh) !important;
+    font-weight: 900 !important;
+    line-height: .9 !important;
+    letter-spacing: -.035em !important;
+    white-space: nowrap !important;
+}
+
+/* COD PROD: 2000000444 — grande */
+.label .codRow .codStack {
+    padding: 0 2.1cqw !important;
+}
+.label .codRow .codStack .codLabel {
+    font-size: min(2.7cqw, 5.5cqh) !important;
+    font-weight: 800 !important;
+}
+.label .codRow .codStack .codValue {
+    margin-top: .55cqh !important;
+    font-size: min(6.2cqw, 12.8cqh) !important;
+    font-weight: 900 !important;
+    line-height: .9 !important;
+    letter-spacing: -.025em !important;
+    white-space: nowrap !important;
+}
+
+/* AMAZON TAPE: faixa preta forte e texto maior */
+.label .brandBand {
+    flex-basis: 7.4cqw !important;
+    width: 7.4cqw !important;
+    background: #000 !important;
+    font-size: min(3.25cqw, 9.8cqh) !important;
+    font-weight: 900 !important;
+    letter-spacing: .08em !important;
+}
+
+/* QR um pouco maior, como na referência */
+.label .qr {
+    width: 29.5cqh !important;
+    padding: 1.4cqh 1.6cqw !important;
+}
+.label .qr img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* CAPA / BC em branco sobre preto */
+.label #tipoBadge .badgeValue {
+    color: #fff !important;
+    font-size: min(3.8cqw, 8.5cqh) !important;
+    font-weight: 900 !important;
+}
+.label #selBadge .badgeValue {
+    color: #fff !important;
+    font-size: min(4.2cqw, 9.8cqh) !important;
+    font-weight: 900 !important;
+}
+
+/* Medidas também ficam fortes e legíveis */
+.label .medidas .medLabel {
+    font-size: min(2.25cqw, 5.1cqh) !important;
+    font-weight: 900 !important;
+}
+.label .medidas .medValue {
+    font-size: min(4.15cqw, 9.8cqh) !important;
+    font-weight: 900 !important;
+}
+
+/* Não deixar o JS reduzir os dois códigos para tamanhos pequenos */
+.label .codValueMain,
+.label .codValue {
+    max-height: none !important;
+}
+
+/* ==========================================================
+   AJUSTE FINAL DOS DOIS CÓDIGOS — IGUAL À REFERÊNCIA
+   ========================================================== */
+.label .codRow {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 19cqh !important;
+    border-bottom: .35cqw solid #000 !important;
+    background: #fff !important;
+}
+
+/* Metade esquerda: COD */
+.label .codRow .codMain {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 1.1cqw !important;
+    padding: 0 1.8cqw !important;
+    border-right: .3cqw solid #000 !important;
+    overflow: hidden !important;
+}
+
+.label .codMain .codLabelMain {
+    flex: none !important;
+    font-size: min(3.4cqw, 7.2cqh) !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+}
+
+.label .codMain .codValueMain {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    font-size: min(7.7cqw, 14.5cqh) !important;
+    line-height: .9 !important;
+    font-weight: 900 !important;
+    letter-spacing: -.035em !important;
+}
+
+/* Metade direita: COD PROD */
+.label .codRow .codStack {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    padding: 0 1.8cqw !important;
+    overflow: hidden !important;
+}
+
+.label .codRow .codStack .codLabel {
+    font-size: min(3.25cqw, 6.8cqh) !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+}
+
+.label .codRow .codStack .codValue {
+    width: 100% !important;
+    margin-top: .5cqh !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+    font-size: min(7.0cqw, 13.2cqh) !important;
+    line-height: .9 !important;
+    font-weight: 900 !important;
+    letter-spacing: -.03em !important;
+}
+
+/* Impede o ajuste responsivo de derrubar os códigos para tamanhos pequenos */
+@media (max-width: 900px) {
+    .label .codMain .codValueMain {
+        font-size: min(7.7cqw, 14.5cqh) !important;
+    }
+    .label .codRow .codStack .codValue {
+        font-size: min(7.0cqw, 13.2cqh) !important;
+    }
+}
+
+
+/* ==========================================================
+   AJUSTES FINOS — NÃO ALTERAR A PROPORÇÃO DA REFERÊNCIA
+   ========================================================== */
+.label .content {
+    width: auto !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+.label .brandBand {
+    flex: 0 0 7.4cqw !important;
+    width: 7.4cqw !important;
+    box-sizing: border-box !important;
+    background: #000 !important;
+}
+
+/* Topo: impedir que DATA/VAL sejam cortados */
+.label .topRow,
+.label .dataTable {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+.label .dataTable .cell {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+.label .dataTable .subRow {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: baseline !important;
+}
+.label .dataTable .subRow .cellLabel {
+    flex: 0 0 auto !important;
+}
+.label .dataTable .subRow .cellValue {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: min(2.55cqw, 6.1cqh) !important;
+}
+
+/* MP / ABC1234: mostrar o valor completo */
+.label #tipoBadge .badgeValue {
+    font-size: min(3.0cqw, 7.2cqh) !important;
+}
+.label #selBadge .badgeValue {
+    font-size: min(3.0cqw, 7.2cqh) !important;
+    letter-spacing: 0 !important;
+}
+
+/* Nome: manter grande, sem cortar por largura */
+.label .titleText[data-out="descricao"] {
+    box-sizing: border-box !important;
+    padding-left: 2.2cqw !important;
+    padding-right: 2.2cqw !important;
+}
+
+/* COD: os 10 dígitos precisam caber inteiros */
+.label .codRow .codMain {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    box-sizing: border-box !important;
+    gap: .7cqw !important;
+    padding-left: 1.8cqw !important;
+    padding-right: 1.8cqw !important;
+}
+.label .codMain .codLabelMain {
+    flex: 0 0 auto !important;
+    font-size: min(2.9cqw, 6.2cqh) !important;
+}
+.label .codMain .codValueMain {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: min(5.05cqw, 10.8cqh) !important;
+    line-height: .92 !important;
+    letter-spacing: -.045em !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+/* COD PROD: grande, mas sem cortar o último dígito */
+.label .codRow .codStack {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    box-sizing: border-box !important;
+    padding-left: 1.8cqw !important;
+    padding-right: 1.8cqw !important;
+}
+.label .codRow .codStack .codLabel {
+    font-size: min(2.8cqw, 6.0cqh) !important;
+}
+.label .codRow .codStack .codValue {
+    font-size: min(5.25cqw, 11.2cqh) !important;
+    line-height: .92 !important;
+    letter-spacing: -.04em !important;
+}
+
+/* MEDIDAS: exatamente em duas linhas, como na referência */
+.label .medidas {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1.1cqw !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+.label .medidas .medIcon {
+    flex: 0 0 auto !important;
+    width: min(6.0cqw, 14.5cqh) !important;
+    height: min(6.0cqw, 14.5cqh) !important;
+}
+.label .medidas .medContent {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: hidden !important;
+}
+.label .medidas .medLabel {
+    display: block !important;
+    margin: 0 !important;
+    font-size: min(2.05cqw, 4.6cqh) !important;
+    line-height: 1 !important;
+}
+.label .medidas .medValue {
+    display: block !important;
+    margin: .45cqh 0 0 !important;
+    max-width: 100% !important;
+    font-size: min(3.65cqw, 8.8cqh) !important;
+    line-height: .95 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
+/* divisões sempre pretas */
+.label, .label .frame, .label .content, .label .topRow,
+.label .qr, .label .dataTable .cell, .label .titleText,
+.label .codRow, .label .bottomRow, .label .medidas, .label .logoBox {
+    border-color: #000 !important;
+}
+
+
+/* ===== BORDAS QUADRADAS DA ETIQUETA ===== */
+.label,
+.label .frame {
+    border-radius: 0 !important;
+}
+
+.label {
+    overflow: hidden;
+}
+
+.label .frame {
+    overflow: hidden;
+}

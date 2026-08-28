@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+import json
+import sqlite3
+from contextlib import closing
+from datetime import datetime
+
+from .database import db
+from config import BACKUP_DIR
+
+
+def obter_ultima() -> sqlite3.Row | None:
+    with closing(db()) as con:
+        return con.execute(
+            "SELECT identificador, dados_json FROM etiquetas ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+
+
+def inserir_lote(
+    con: sqlite3.Connection,
+    itens: list[dict],
+    destino: str,
+    dados_originais: dict,
+) -> list[dict]:
+    """Insere um lote de etiquetas dentro de uma transação já aberta (BEGIN
+    IMMEDIATE feito pelo controller/service que orquestra a geração).
+    `itens` é uma lista de {contador, identificador, qr, zpl}.
+    Retorna a lista com o `id` de cada linha inserida."""
+    criada_em = datetime.now().isoformat(timespec="seconds")
+    serializado = json.dumps(dados_originais, ensure_ascii=False)
+    resultado = []
+    for item in itens:
+        cur = con.execute(
+            "INSERT INTO etiquetas(contador, identificador, criada_em, dados_json, qr_texto, zpl, destino, sucesso) "
+            "VALUES (?,?,?,?,?,?,?,0)",
+            (item["contador"], item["identificador"], criada_em, serializado, item["qr"], item["zpl"], destino),
+        )
+        resultado.append({**item, "id": cur.lastrowid})
+    return resultado
+
+
+def marcar_resultado(itens: list[dict], sucesso: bool, erro: str | None) -> None:
+    with closing(db()) as con:
+        con.executemany(
+            "UPDATE etiquetas SET sucesso=?, erro=? WHERE id=?",
+            ((1 if sucesso else 0, erro, item["id"]) for item in itens),
+        )
+        con.commit()
+
+
+def listar_historico(limite: int = 200) -> list[dict]:
+    with closing(db()) as con:
+        rows = con.execute(
+            "SELECT id, contador, identificador, criada_em, dados_json, destino, sucesso, erro "
+            "FROM etiquetas ORDER BY id DESC LIMIT ?",
+            (limite,),
+        ).fetchall()
+    resultado = []
+    for row in rows:
+        item = dict(row)
+        item["dados"] = json.loads(item.pop("dados_json"))
+        resultado.append(item)
+    return resultado
+
+
+def obter_zpl(label_id: int) -> sqlite3.Row | None:
+    with closing(db()) as con:
+        return con.execute(
+            "SELECT identificador, zpl FROM etiquetas WHERE id=?", (label_id,)
+        ).fetchone()
+
+
+def gerar_backup() -> "Path":  # noqa: F821 - Path importado só para o hint
+    from pathlib import Path
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    target: Path = BACKUP_DIR / f"etiquetas-{stamp}.db"
+    with closing(db()) as source, closing(sqlite3.connect(target)) as dest:
+        source.backup(dest)
+    return target
