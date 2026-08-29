@@ -9,7 +9,11 @@ def clean(value: object) -> str:
 
 
 def zpl_text(value: object) -> str:
-    return clean(value).encode("cp850", errors="replace").decode("cp850")
+    # O ZPL é enviado em UTF-8 (^CI27, ver services/zpl.py e services/impressao.py),
+    # então não há necessidade de restringir a um charset como cp850 aqui —
+    # isso só arriscava trocar acentos válidos por "?". `clean` já remove
+    # quebras de linha e os caracteres ^ e ~, que têm significado especial no ZPL.
+    return clean(value)
 
 
 def quantity_x1000(raw: object) -> str:
@@ -34,6 +38,20 @@ def display_date(value: object) -> str:
         return datetime.strptime(raw, "%Y-%m-%d").strftime("%d/%m/%Y")
     except ValueError:
         return raw
+
+
+MESES = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"]
+
+
+def display_month_year(value: object) -> str:
+    """Formata AAAA-MM-DD como MES/AAAA (ex.: 2029-01-31 -> JAN/2029),
+    igual ao campo VAL da pré-visualização web."""
+    raw = clean(value)
+    try:
+        parsed = datetime.strptime(raw, "%Y-%m-%d")
+    except ValueError:
+        return raw
+    return f"{MESES[parsed.month - 1]}/{parsed.year}"
 
 
 def dots(mm: float, dpi: int) -> int:

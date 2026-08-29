@@ -4,10 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="./static/style.css" />
+    <link rel="stylesheet" href="./static/style.css?v=4" />
   </head>
+
   <body>
     <div class="ambient"></div>
+
     <header class="topbar">
       <div class="brand">
         <div class="brandMark">ZE</div>
@@ -16,21 +18,34 @@
           <small>Controle inteligente e rastreável</small>
         </div>
       </div>
+
       <div class="headerMeta">
-        <span class="chip" id="branchChip">Filial 04</span
-        ><strong id="nextTop">—</strong>
+        <span class="chip" id="branchChip">Filial 04</span>
+        <strong id="nextTop">—</strong>
       </div>
     </header>
+
     <nav>
       <button class="active" data-tab="editor">
-        <span class="navIcon">✦</span>Criar etiqueta</button
-      ><button data-tab="history">
-        <span class="navIcon">◷</span>Histórico</button
-      ><button data-tab="settings">
-        <span class="navIcon">⚙</span>Configurações
+        <span class="navIcon">✦</span>
+        Criar etiqueta
+      </button>
+
+      <button data-tab="history">
+        <span class="navIcon">◷</span>
+        Histórico
+      </button>
+
+      <button data-tab="settings">
+        <span class="navIcon">⚙</span>
+        Configurações
       </button>
     </nav>
+
     <main>
+      <!-- ==========================================================
+           CRIAR ETIQUETA
+      =========================================================== -->
       <section id="editor" class="tab active">
         <div class="sectionIntro">
           <div>
@@ -38,74 +53,89 @@
             <h2>Prepare, confira e imprima</h2>
             <p>O QR e o contador são atualizados automaticamente.</p>
           </div>
-          <div class="liveBadge"><i></i>Sistema pronto</div>
+
+          <div class="liveBadge">
+            <i></i>
+            Sistema pronto
+          </div>
         </div>
+
         <div class="grid">
+          <!-- ======================================================
+               FORMULÁRIO
+          ======================================================= -->
           <div class="card">
             <h2 class="cardTitle">
-              <span class="cardIcon">✎</span>Informações da etiqueta
+              <span class="cardIcon">✎</span>
+              Informações da etiqueta
             </h2>
+
             <form id="labelForm" class="fields">
               <div>
-                <label>Marca / Cliente (faixa preta)</label
-                ><input name="cliente" value="AMAZONTAPE" />
+                <label>Marca / Cliente (faixa preta)</label>
+                <input name="cliente" value="AMAZONTAPE" />
               </div>
+
               <div>
-                <label>Tipo (T) *</label
-                ><input
+                <label>Tipo (T) *</label>
+                <input
                   name="tipo"
-                  value="CAPA"
+                  value=""
                   placeholder="CAPA"
                   required
                 />
               </div>
+
               <div>
-                <label>Código do produto (P) *</label
-                ><input
+                <label>Código do produto (P) *</label>
+                <input
                   name="produto_codigo"
-                  value="7985"
-                  placeholder="7985"
+                  value="2000000444"
+                  placeholder="2000000444"
                   required
                 />
               </div>
+
               <div>
-                <label>Código do produto interno</label
-                ><input
+                <label>Código do produto interno</label>
+                <input
                   name="cod_prod"
                   value="2000000444"
                   placeholder="2000000444"
                 />
               </div>
+
               <div class="span2">
-                <label>Descrição do produto (D) *</label
-                ><textarea
+                <label>Descrição do produto (D) *</label>
+                <textarea
                   name="descricao"
                   placeholder="TUBETE ADELBRAS 711"
                   required
-                >
-TUBETE ADELBRAS 711</textarea
-                >
+                >TUBETE ADELBRAS 711</textarea>
               </div>
+
               <div>
-                <label>Lote de controle / selo (S) *</label
-                ><input
+                <label>Lote de controle / selo (S) *</label>
+                <input
                   name="lote_controle"
                   value="BC"
                   placeholder="BC"
                   required
                 />
               </div>
+
               <div>
-                <label>Lote de fabricação (L)</label
-                ><input
+                <label>Lote de fabricação (L)</label>
+                <input
                   name="lote_base"
                   value="4016/2026"
                   placeholder="4016/2026"
                 />
               </div>
+
               <div>
-                <label>Quantidade (Q) * — será × 1000 no QR</label
-                ><input
+                <label>Quantidade (Q) * — será × 1000 no QR</label>
+                <input
                   name="quantidade"
                   inputmode="decimal"
                   value="910"
@@ -113,80 +143,128 @@ TUBETE ADELBRAS 711</textarea
                   required
                 />
               </div>
+
               <div>
-                <label>Unidade (U) *</label
-                ><input name="unidade" value="pcs" required />
+                <label>Unidade (U) *</label>
+                <input name="unidade" value="pcs" required />
               </div>
+
               <div>
-                <label>Operador</label
-                ><input name="operador" value="252" placeholder="252" />
+                <label>Operador</label>
+                <input
+                  name="operador"
+                  value="252"
+                  placeholder="252"
+                />
               </div>
+
               <div>
-                <label>Medidas</label
-                ><input
+                <label>Medidas</label>
+                <input
                   name="medidas"
                   value="76,5 x 2,5 x 18mm"
                   placeholder="76,5 x 2,5 x 18mm"
                 />
               </div>
+
               <div>
-                <label>Fabricação / Data (visual)</label
-                ><input name="fabricacao" type="date" value="2026-08-05" />
+                <label>Fabricação / Data (visual)</label>
+                <input
+                  name="fabricacao"
+                  type="date"
+                  value="2026-08-05"
+                />
               </div>
+
               <div>
-                <label>Validade (visual)</label
-                ><input name="validade" type="date" value="2029-01-31" />
+                <label>Validade (visual)</label>
+                <input
+                  name="validade"
+                  type="date"
+                  value="2029-01-31"
+                />
               </div>
-              <div><label>DPD (Y) — só no QR</label><input name="dpd" /></div>
+
+              <div>
+                <label>DPD (Y) — só no QR</label>
+                <input name="dpd" />
+              </div>
             </form>
+
             <div class="actions">
               <button class="primary" id="saveProject">
-                Salvar etiqueta editável (.etq)</button
-              ><label class="button fileButton" for="openProject"
-                >Abrir etiqueta salva<input
+                Salvar etiqueta editável (.etq)
+              </button>
+
+              <label class="button fileButton" for="openProject">
+                Abrir etiqueta salva
+                <input
                   id="openProject"
                   type="file"
                   accept=".etq,application/json"
-              /></label>
+                />
+              </label>
             </div>
+
             <div class="actions">
               <button class="printFile" id="download">
                 Gerar arquivo somente para impressora (.prn)
               </button>
+
               <div class="printGroup">
-                <label for="labelCount">Nº de etiquetas</label
-                ><input
+                <label for="labelCount">Nº de etiquetas</label>
+
+                <input
                   id="labelCount"
                   type="number"
                   min="1"
                   max="1000"
                   step="1"
                   value="1"
-                /><button class="print" id="print">Imprimir na Zebra</button>
+                />
+
+                <button class="print" id="print">
+                  Imprimir na Zebra
+                </button>
               </div>
             </div>
+
             <div class="note">
-              <strong>Para editar depois:</strong> salve em
-              <strong>.etq</strong> e reabra pelo botão acima. O arquivo
-              <strong>.prn</strong> contém comandos prontos para a impressora e
-              nunca deve ser aberto no ZebraDesigner. O número da prévia só será
-              consumido ao gerar o PRN ou imprimir.
+              <strong>Para editar depois:</strong>
+              salve em <strong>.etq</strong> e reabra pelo botão acima.
+              O arquivo <strong>.prn</strong> contém comandos prontos para
+              a impressora e nunca deve ser aberto no ZebraDesigner.
+              O número da prévia só será consumido ao gerar o PRN ou imprimir.
             </div>
+
             <div id="status" class="status"></div>
           </div>
+
+          <!-- ======================================================
+               PRÉ-VISUALIZAÇÃO
+          ======================================================= -->
           <div class="card">
             <h2 class="cardTitle">
-              <span class="cardIcon">▣</span>Pré-visualização em tempo real
+              <span class="cardIcon">▣</span>
+              Pré-visualização em tempo real
             </h2>
+
             <div class="stage">
               <div class="label" id="previewLabel">
                 <div class="content">
+
+                  <!-- ==================== TOPO ==================== -->
                   <div class="topRow" id="topRow">
                     <div class="qr empty" id="qrBox"></div>
+
                     <div class="badgeStack">
                       <div class="badge2" id="tipoBadge">
-                        <span class="badgeValue" data-out="tipo"></span>
+                        <span
+                          class="badgeValue"
+                          data-out="tipo"
+                        ></span>
                       </div>
+
                       <div class="badge2" id="selBadge">
                         <span
                           class="badgeValue"
@@ -194,48 +272,86 @@ TUBETE ADELBRAS 711</textarea
                         ></span>
                       </div>
                     </div>
+
                     <div class="dataTable" id="dataTable">
                       <div class="cell">
-                        <span class="cellLabel">LOTE DE FABRICAÇÃO</span
-                        ><span class="cellValue" data-out="lote_base"></span>
+                        <span class="cellLabel">
+                          LOTE DE FABRICAÇÃO
+                        </span>
+                        <span
+                          class="cellValue"
+                          data-out="lote_base"
+                        ></span>
                       </div>
+
                       <div class="cell">
                         <div class="subRow">
-                          <span class="cellLabel">DATA&nbsp;</span
-                          ><span
+                          <span class="cellLabel">DATA&nbsp;</span>
+                          <span
                             class="cellValue"
                             data-out-date="fabricacao"
                           ></span>
                         </div>
+
                         <div class="subRow">
-                          <span class="cellLabel">VAL:&nbsp;</span
-                          ><span
+                          <span class="cellLabel">VAL:&nbsp;</span>
+                          <span
                             class="cellValue"
                             data-out-valmes="validade"
                           ></span>
                         </div>
                       </div>
+
                       <div class="cell big">
-                        <span class="cellLabel">QUANTIDADE</span
-                        ><span class="cellValue" data-out-qty="1"></span>
+                        <span class="cellLabel">
+                          QUANTIDADE
+                        </span>
+                        <span
+                          class="cellValue"
+                          data-out-qty="1"
+                        ></span>
                       </div>
+
                       <div class="cell big">
-                        <span class="cellLabel">OPERADOR</span
-                        ><span class="cellValue" data-out="operador"></span>
+                        <span class="cellLabel">
+                          OPERADOR
+                        </span>
+                        <span
+                          class="cellValue"
+                          data-out="operador"
+                        ></span>
                       </div>
                     </div>
                   </div>
-                  <div class="titleText" data-out="descricao"></div>
+
+                  <!-- ==================== TÍTULO ==================== -->
+                  <div
+                    class="titleText"
+                    data-out="descricao"
+                  ></div>
+
+                  <!-- ==================== CÓDIGOS ==================== -->
                   <div class="codRow">
                     <div class="codMain">
                       <span class="codLabelMain">COD:</span>
-                      <span class="codValueMain" data-out="produto_codigo"></span>
+                      <span
+                        class="codValueMain"
+                        data-out="produto_codigo"
+                      ></span>
                     </div>
+
                     <div class="codStack">
-                      <span class="codLabel">COD PROD:</span
-                      ><span class="codValue" data-out="cod_prod"></span>
+                      <span class="codLabel">
+                        COD PROD:
+                      </span>
+                      <span
+                        class="codValue"
+                        data-out="cod_prod"
+                      ></span>
                     </div>
                   </div>
+
+                  <!-- ==================== MEDIDAS + LOGO ==================== -->
                   <div class="bottomRow">
                     <div class="medidas">
                       <svg
@@ -243,6 +359,7 @@ TUBETE ADELBRAS 711</textarea
                         viewBox="0 0 48 48"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
                       >
                         <rect
                           x="14"
@@ -253,12 +370,14 @@ TUBETE ADELBRAS 711</textarea
                           stroke="currentColor"
                           stroke-width="2.4"
                         />
+
                         <path
                           d="M6 10v24M6 10h4M6 34h4"
                           stroke="currentColor"
                           stroke-width="2"
                           stroke-linecap="round"
                         />
+
                         <path
                           d="M14 41h14M14 41v-4M28 41v-4"
                           stroke="currentColor"
@@ -266,60 +385,81 @@ TUBETE ADELBRAS 711</textarea
                           stroke-linecap="round"
                         />
                       </svg>
+
                       <div class="medContent">
-                        <span class="medLabel">MEDIDAS:</span>
-                        <span class="medValue" data-out="medidas"></span>
+                        <span class="medLabel">
+                          MEDIDAS:
+                        </span>
+
+                        <span
+                          class="medValue"
+                          data-out="medidas"
+                        ></span>
                       </div>
                     </div>
+
+                    <!-- LOGO DA ETIQUETA -->
                     <div class="logoBox">
-                      <svg
-                        class="logoIcon"
-                        viewBox="0 0 40 40"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <circle cx="10" cy="12" r="2.6" />
-                        <circle cx="18" cy="8" r="2.2" />
-                        <circle cx="26" cy="10" r="3" />
-                        <circle cx="8" cy="20" r="2" />
-                        <circle cx="16" cy="18" r="3.2" />
-                        <circle cx="25" cy="20" r="2.4" />
-                        <circle cx="12" cy="27" r="2.4" />
-                        <circle cx="20" cy="29" r="1.8" />
-                        <circle cx="28" cy="28" r="2.6" />
-                      </svg>
-                      <div class="logoText">
-                        <strong>LIBRAP I.</strong>
-                        <small>SOLUÇÕES EM PVC</small>
-                      </div>
+                      <img
+                        src="logo\logo.png"
+                        alt="Logo"
+                        class="labelLogo"
+                      />
                     </div>
                   </div>
                 </div>
-                <div class="brandBand" data-out="cliente">AMAZONTAPE</div>
-                <div class="qrCaption" id="qrText"></div>
+
+                <!-- ==================== MARCA LATERAL ==================== -->
+                <div
+                  class="brandBand"
+                  data-out="cliente"
+                >
+                  AMAZONTAPE
+                </div>
+
+                <div
+                  class="qrCaption"
+                  id="qrText"
+                ></div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- ==========================================================
+           HISTÓRICO
+      =========================================================== -->
       <section id="history" class="tab">
         <div class="sectionIntro">
           <div>
             <span class="eyebrow">Rastreabilidade</span>
             <h2>Histórico e auditoria</h2>
-            <p>Consulte, reutilize ou recupere qualquer etiqueta emitida.</p>
+            <p>
+              Consulte, reutilize ou recupere qualquer etiqueta emitida.
+            </p>
           </div>
         </div>
+
         <div class="card">
           <h2 class="cardTitle">
-            <span class="cardIcon">◷</span>Etiquetas registradas
+            <span class="cardIcon">◷</span>
+            Etiquetas registradas
           </h2>
+
           <div class="actions">
-            <button id="refreshHistory">↻ Atualizar</button
-            ><a class="button" href="/api/backup"
-              >↓ Baixar backup do contador</a
+            <button id="refreshHistory">
+              ↻ Atualizar
+            </button>
+
+            <a
+              class="button"
+              href="/api/backup"
             >
+              ↓ Baixar backup do contador
+            </a>
           </div>
+
           <div class="tableWrap">
             <table>
               <thead>
@@ -334,40 +474,55 @@ TUBETE ADELBRAS 711</textarea
                   <th>Arquivo da impressora</th>
                 </tr>
               </thead>
+
               <tbody id="historyRows"></tbody>
             </table>
           </div>
         </div>
       </section>
+
+      <!-- ==========================================================
+           CONFIGURAÇÕES
+      =========================================================== -->
       <section id="settings" class="tab">
         <div class="sectionIntro">
           <div>
             <span class="eyebrow">Personalização</span>
             <h2>Configurações</h2>
-            <p>Defina filial, dimensões e destino de impressão.</p>
+            <p>
+              Defina filial, dimensões e destino de impressão.
+            </p>
           </div>
         </div>
+
         <div class="card settings">
           <h2 class="cardTitle">
-            <span class="cardIcon">⚙</span>Etiqueta e impressora
+            <span class="cardIcon">⚙</span>
+            Etiqueta e impressora
           </h2>
+
           <form id="settingsForm" class="fields">
             <div>
-              <label>Filial (E)</label
-              ><input
+              <label>Filial (E)</label>
+              <input
                 name="filial"
                 maxlength="10"
                 placeholder="Ex.: 04"
                 required
               />
             </div>
+
             <div>
-              <label>Prefixo do contador (I)</label
-              ><input name="prefixo_contador" maxlength="8" />
+              <label>Prefixo do contador (I)</label>
+              <input
+                name="prefixo_contador"
+                maxlength="8"
+              />
             </div>
+
             <div>
-              <label>Largura (mm)</label
-              ><input
+              <label>Largura (mm)</label>
+              <input
                 name="largura_mm"
                 type="number"
                 min="20"
@@ -375,9 +530,10 @@ TUBETE ADELBRAS 711</textarea
                 step="0.1"
               />
             </div>
+
             <div>
-              <label>Comprimento/altura (mm)</label
-              ><input
+              <label>Comprimento/altura (mm)</label>
+              <input
                 name="comprimento_mm"
                 type="number"
                 min="20"
@@ -385,59 +541,129 @@ TUBETE ADELBRAS 711</textarea
                 step="0.1"
               />
             </div>
+
             <div>
-              <label>Resolução da Zebra</label
-              ><select name="dpi">
+              <label>Resolução da Zebra</label>
+              <select name="dpi">
                 <option>203</option>
                 <option>300</option>
                 <option>600</option>
               </select>
             </div>
+
             <div>
-              <label>Nome exato da impressora no Windows</label
-              ><input
+              <label>
+                Nome exato da impressora no Windows
+              </label>
+              <input
                 name="impressora"
                 placeholder="Ex.: ZDesigner ZD220-203dpi ZPL"
               />
             </div>
           </form>
+
           <div class="actions">
-            <button class="primary" id="saveSettings">
+            <button
+              class="primary"
+              id="saveSettings"
+            >
               Salvar configurações
             </button>
           </div>
+
           <div class="note">
-            A filial informada será gravada no campo <strong>(E)</strong> de
-            todos os próximos QR Codes. Guarde backups da pasta
-            <strong>dados</strong>; ela protege a continuidade do contador.
+            A filial informada será gravada no campo
+            <strong>(E)</strong> de todos os próximos QR Codes.
+            Guarde backups da pasta <strong>dados</strong>;
+            ela protege a continuidade do contador.
           </div>
-          <div id="settingsStatus" class="status"></div>
+
+          <div
+            id="settingsStatus"
+            class="status"
+          ></div>
         </div>
       </section>
     </main>
-    <div class="busyOverlay" id="busyOverlay" aria-hidden="true">
+
+    <!-- ============================================================
+         PROCESSAMENTO
+    ============================================================= -->
+    <div
+      class="busyOverlay"
+      id="busyOverlay"
+      aria-hidden="true"
+    >
       <div class="busyCard">
         <div class="spinner"></div>
-        <h3 id="busyTitle">Processando etiqueta</h3>
+
+        <h3 id="busyTitle">
+          Processando etiqueta
+        </h3>
+
         <p id="busyMessage">
-          Aguarde<span class="loadingDots"
-            ><span>.</span><span>.</span><span>.</span></span
-          >
+          Aguarde
+          <span class="loadingDots">
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+          </span>
         </p>
       </div>
     </div>
-    <div class="modalBackdrop" id="confirmModal" aria-hidden="true">
+
+    <!-- ============================================================
+         MODAL DE CONFIRMAÇÃO
+    ============================================================= -->
+    <div
+      class="modalBackdrop"
+      id="confirmModal"
+      aria-hidden="true"
+    >
       <div class="modalCard">
-        <div class="cardIcon" style="margin: 0 auto 14px">!</div>
-        <h3 id="confirmTitle">Confirmar operação</h3>
+        <div
+          class="cardIcon"
+          style="margin: 0 auto 14px"
+        >
+          !
+        </div>
+
+        <h3 id="confirmTitle">
+          Confirmar operação
+        </h3>
+
         <p id="confirmMessage"></p>
+
         <div class="modalActions">
-          <button id="confirmCancel">Cancelar</button
-          ><button class="primary" id="confirmOk">Confirmar</button>
+          <button id="confirmCancel">
+            Cancelar
+          </button>
+
+          <button
+            class="primary"
+            id="confirmOk"
+          >
+            Confirmar
+          </button>
         </div>
       </div>
     </div>
-    <div class="toasts" id="toasts" aria-live="polite"></div>
-    <script src="/static/app.js" defer></script>
+
+    <!-- ============================================================
+         TOASTS
+    ============================================================= -->
+    <div
+      class="toasts"
+      id="toasts"
+      aria-live="polite"
+    ></div>
+
+    <!-- ============================================================
+         JAVASCRIPT
+    ============================================================= -->
+    <script
+      src="/static/app.js"
+      defer
+    ></script>
   </body>
 </html>

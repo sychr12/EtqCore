@@ -18,7 +18,10 @@ def raw_print(printer: str, content: str) -> None:
         _fields_ = [("pDocName", ctypes.c_wchar_p), ("pOutputFile", ctypes.c_wchar_p), ("pDatatype", ctypes.c_wchar_p)]
 
     doc = DOC_INFO_1("Etiqueta Zebra", None, "RAW")
-    payload = content.encode("cp850", errors="replace")
+    # O ZPL gerado declara ^CI27 (UTF-8, ver services/zpl.py). Os bytes
+    # enviados precisam usar o mesmo encoding, senão acentos (Ç, Ã, Á...)
+    # chegam corrompidos ou somem — não use cp850 aqui.
+    payload = content.encode("utf-8")
     written = ctypes.c_ulong()
     try:
         if not winspool.StartDocPrinterW(handle, 1, ctypes.byref(doc)):
