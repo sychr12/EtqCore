@@ -1,3 +1,5 @@
+"""Cria números únicos e legíveis para identificar cada etiqueta."""
+
 from __future__ import annotations
 
 
@@ -28,9 +30,11 @@ def counter_token(counter: int) -> str:
 
 
 def identifier_for_counter(counter: int, prefix: str) -> str:
+    """Junta o prefixo configurado ao número de dez posições."""
     return f"{prefix}{counter_token(counter)}"
 
 
 def visible_counter(counter: int) -> str:
+    """Formata o número mostrado no topo da interface."""
     token = counter_token(counter)
     return f"{counter:05d}" if token.isdigit() else token

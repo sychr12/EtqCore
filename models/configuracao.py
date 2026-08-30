@@ -1,3 +1,5 @@
+"""Lê e grava as configurações permanentes do sistema."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -20,6 +22,7 @@ def obter_todas(con: sqlite3.Connection | None = None) -> dict[str, str]:
 
 
 def salvar(valores: dict[str, str]) -> None:
+    """Salva todas as opções recebidas usando a chave de cada configuração."""
     with closing(db()) as con:
         con.executemany("INSERT OR REPLACE INTO config(chave, valor) VALUES (?, ?)", valores.items())
         con.commit()

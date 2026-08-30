@@ -1,3 +1,5 @@
+"""Monta o conteúdo rastreável do QR e cria sua imagem para a prévia."""
+
 from __future__ import annotations
 
 from reportlab.graphics import renderSVG
@@ -9,6 +11,7 @@ from .texto import quantity_x1000
 
 
 def qr_payload(data: dict, identifier: str, branch: str = "04") -> str:
+    """Organiza os campos no formato esperado pelo leitor da produção."""
     return (
         f"(E){clean(branch)}(T){clean(data.get('tipo'))}(P){clean(data.get('produto_codigo'))}"
         f"(D){clean(data.get('descricao'))}(S){clean(data.get('lote_controle'))}"
@@ -18,6 +21,7 @@ def qr_payload(data: dict, identifier: str, branch: str = "04") -> str:
 
 
 def render_svg(text: str, size: int = 360) -> str:
+    """Transforma o texto do QR em uma imagem vetorial nítida no navegador."""
     widget = QrCodeWidget(text)
     bounds = widget.getBounds()
     drawing = Drawing(

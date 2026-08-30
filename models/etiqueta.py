@@ -1,15 +1,19 @@
+"""Operações do histórico: inserir etiquetas, marcar resultado e fazer backup."""
+
 from __future__ import annotations
 
 import json
 import sqlite3
 from contextlib import closing
 from datetime import datetime
+from pathlib import Path
 
 from .database import db
 from config import BACKUP_DIR
 
 
 def obter_ultima() -> sqlite3.Row | None:
+    """Busca os dados da etiqueta mais recente para restaurar o formulário."""
     with closing(db()) as con:
         return con.execute(
             "SELECT identificador, dados_json FROM etiquetas ORDER BY id DESC LIMIT 1"
@@ -40,6 +44,7 @@ def inserir_lote(
 
 
 def marcar_resultado(itens: list[dict], sucesso: bool, erro: str | None) -> None:
+    """Registra se o arquivo foi gerado/impresso ou se ocorreu algum erro."""
     with closing(db()) as con:
         con.executemany(
             "UPDATE etiquetas SET sucesso=?, erro=? WHERE id=?",
@@ -49,6 +54,7 @@ def marcar_resultado(itens: list[dict], sucesso: bool, erro: str | None) -> None
 
 
 def listar_historico(limite: int = 200) -> list[dict]:
+    """Devolve as últimas etiquetas em um formato pronto para a interface."""
     with closing(db()) as con:
         rows = con.execute(
             "SELECT id, contador, identificador, criada_em, dados_json, destino, sucesso, erro "
@@ -64,16 +70,17 @@ def listar_historico(limite: int = 200) -> list[dict]:
 
 
 def obter_zpl(label_id: int) -> sqlite3.Row | None:
+    """Recupera o arquivo de impressão de uma etiqueta específica."""
     with closing(db()) as con:
         return con.execute(
             "SELECT identificador, zpl FROM etiquetas WHERE id=?", (label_id,)
         ).fetchone()
 
 
-def gerar_backup() -> "Path":  # noqa: F821 - Path importado só para o hint
-    from pathlib import Path
-
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+def gerar_backup() -> Path:
+    """Copia o banco em uso para a pasta de backups sem corrompê-lo."""
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     target: Path = BACKUP_DIR / f"etiquetas-{stamp}.db"
     with closing(db()) as source, closing(sqlite3.connect(target)) as dest:
         source.backup(dest)

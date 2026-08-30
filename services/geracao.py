@@ -1,3 +1,5 @@
+"""Coordena contador, QR, ZPL, histórico e impressão de um lote."""
+
 from __future__ import annotations
 
 from contextlib import closing
@@ -7,7 +9,7 @@ from models import configuracao as config_model
 from models import etiqueta as etiqueta_model
 
 from .contador import identifier_for_counter
-from .impressao import raw_print
+from .impressao import raw_print, resolve_printer
 from .qrcode_service import qr_payload
 from .zpl import make_zpl
 
@@ -15,6 +17,14 @@ from .zpl import make_zpl
 def gerar_lote(body: dict, destino: str, quantidade_etiquetas: int) -> dict:
     """Reserva o lote de contadores, grava no banco, opcionalmente imprime, e
     devolve um resumo pronto para virar JSON de resposta."""
+    resolved_printer = None
+    if destino == "imprimir":
+        # Confere o destino antes de reservar contadores. Assim, cabo desligado,
+        # driver ausente ou nome inválido não consomem números de etiquetas.
+        print_cfg = config_model.obter_todas()
+        resolved_printer = resolve_printer(print_cfg.get("impressora", ""))
+
+    # A transação impede que duas impressões recebam o mesmo contador.
     with closing(db()) as con:
         con.execute("BEGIN IMMEDIATE")
         cfg = config_model.obter_todas(con)
@@ -29,11 +39,12 @@ def gerar_lote(body: dict, destino: str, quantidade_etiquetas: int) -> dict:
         config_model.atualizar_proximo_contador(con, first_counter + quantidade_etiquetas)
         con.commit()
 
+    # Várias etiquetas são unidas em um único trabalho enviado ao spooler.
     combined_zpl = "\n".join(label["zpl"] for label in labels)
     error = None
     if destino == "imprimir":
         try:
-            raw_print(cfg["impressora"], combined_zpl)
+            raw_print(resolved_printer or cfg["impressora"], combined_zpl)
         except Exception as exc:
             error = str(exc)
 

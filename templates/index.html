@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="./static/style.css?v=4" />
+    <link rel="stylesheet" href="/static/style.css?v=29" />
   </head>
 
   <body>
@@ -12,16 +12,19 @@
 
     <header class="topbar">
       <div class="brand">
-        <div class="brandMark">ZE</div>
+        <div class="brandMark">ZD</div>
         <div>
           <h1>Etiquetas Zebra</h1>
-          <small>Controle inteligente e rastreável</small>
+          <small>Zebra ZD220 · produção rastreável</small>
         </div>
       </div>
 
       <div class="headerMeta">
-        <span class="chip" id="branchChip">Filial 04</span>
-        <strong id="nextTop">—</strong>
+        <span class="chip"><span class="statusDot"></span><span id="branchChip">Filial 04</span></span>
+        <div class="nextCounter">
+          <small>Próxima etiqueta</small>
+          <strong id="nextTop">—</strong>
+        </div>
       </div>
     </header>
 
@@ -51,7 +54,7 @@
           <div>
             <span class="eyebrow">Produção de etiquetas</span>
             <h2>Prepare, confira e imprima</h2>
-            <p>O QR e o contador são atualizados automaticamente.</p>
+            <p>Preencha os dados, valide a prova e envie para produção.</p>
           </div>
 
           <div class="liveBadge">
@@ -64,7 +67,7 @@
           <!-- ======================================================
                FORMULÁRIO
           ======================================================= -->
-          <div class="card">
+          <div class="card editorCard">
             <h2 class="cardTitle">
               <span class="cardIcon">✎</span>
               Informações da etiqueta
@@ -191,7 +194,7 @@
               </div>
             </form>
 
-            <div class="actions">
+            <div class="actions projectActions">
               <button class="primary" id="saveProject">
                 Salvar etiqueta editável (.etq)
               </button>
@@ -206,12 +209,16 @@
               </label>
             </div>
 
-            <div class="actions">
-              <button class="printFile" id="download">
-                Gerar arquivo somente para impressora (.prn)
+            <div class="actions productionActions">
+              <button class="previewAction" id="viewPrintPreview">
+                ◉ Visualizar antes de imprimir
               </button>
 
-              <div class="printGroup">
+              <button class="printFile" id="download">
+                ↓ Gerar arquivo da impressora (.prn)
+              </button>
+
+              <div class="printGroup productionGroup">
                 <label for="labelCount">Nº de etiquetas</label>
 
                 <input
@@ -224,7 +231,7 @@
                 />
 
                 <button class="print" id="print">
-                  Imprimir na Zebra
+                  Imprimir na ZD220
                 </button>
               </div>
             </div>
@@ -243,11 +250,21 @@
           <!-- ======================================================
                PRÉ-VISUALIZAÇÃO
           ======================================================= -->
-          <div class="card">
+          <div class="card previewCard">
             <h2 class="cardTitle">
               <span class="cardIcon">▣</span>
-              Pré-visualização em tempo real
+              Prova de impressão
             </h2>
+
+            <div class="previewToolbar">
+              <div class="previewSpec">
+                <strong>100 × 60 mm</strong>
+                <span>ZD220 · 203 dpi · 800 × 480 dots</span>
+              </div>
+              <button class="previewOpenButton" id="viewPrintPreviewTop">
+                Ampliar prova
+              </button>
+            </div>
 
             <div class="stage">
               <div class="label" id="previewLabel">
@@ -401,9 +418,9 @@
                     <!-- LOGO DA ETIQUETA -->
                     <div class="logoBox">
                       <img
-                        src="logo\logo.png"
+                        src="/logo/logo.png"
                         alt="Logo"
-                        class="labelLogo"
+                        class="logoImage"
                       />
                     </div>
                   </div>
@@ -546,8 +563,6 @@
               <label>Resolução da Zebra</label>
               <select name="dpi">
                 <option>203</option>
-                <option>300</option>
-                <option>600</option>
               </select>
             </div>
 
@@ -558,11 +573,40 @@
               <input
                 name="impressora"
                 placeholder="Ex.: ZDesigner ZD220-203dpi ZPL"
+                list="printerOptions"
               />
+              <datalist id="printerOptions"></datalist>
+            </div>
+
+            <div>
+              <label>Velocidade de impressão</label>
+              <select name="velocidade_ips">
+                <option value="2">2 ips — máxima qualidade</option>
+                <option value="3">3 ips — recomendado</option>
+                <option value="4">4 ips — mais rápido</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Tonalidade (0–30)</label>
+              <input name="tonalidade" type="number" min="0" max="30" step="1" />
+            </div>
+
+            <div>
+              <label>Correção horizontal (mm)</label>
+              <input name="deslocamento_x_mm" type="number" min="-10" max="10" step="0.1" />
+            </div>
+
+            <div>
+              <label>Correção vertical (mm)</label>
+              <input name="deslocamento_y_mm" type="number" min="-10" max="10" step="0.1" />
             </div>
           </form>
 
           <div class="actions">
+            <button id="findPrinters">
+              Procurar impressoras no Windows
+            </button>
             <button
               class="primary"
               id="saveSettings"
@@ -649,6 +693,24 @@
       </div>
     </div>
 
+    <!-- PROVA DE IMPRESSÃO — não consome o contador -->
+    <div class="printPreviewBackdrop" id="printPreviewModal" aria-hidden="true">
+      <div class="printPreviewCard" role="dialog" aria-modal="true" aria-labelledby="printPreviewTitle">
+        <div class="printPreviewHeader">
+          <div>
+            <span class="eyebrow">Prova sem consumir contador</span>
+            <h3 id="printPreviewTitle">Como a etiqueta será enviada à ZD220</h3>
+            <p id="printPreviewMeta"></p>
+          </div>
+          <button id="closePrintPreview" aria-label="Fechar visualização">Fechar</button>
+        </div>
+        <div class="printPreviewCanvas" id="printPreviewCanvas"></div>
+        <div class="printPreviewNote">
+          A linha externa representa o limite físico da etiqueta. Confira se QR, textos e logo estão dentro dela.
+        </div>
+      </div>
+    </div>
+
     <!-- ============================================================
          TOASTS
     ============================================================= -->
@@ -662,7 +724,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js"
+      src="/static/app.js?v=15"
       defer
     ></script>
   </body>

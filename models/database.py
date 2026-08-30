@@ -1,3 +1,5 @@
+"""Cria e abre o banco SQLite que guarda contador, configurações e histórico."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -7,6 +9,8 @@ from config import DATA_DIR, DB_PATH, BACKUP_DIR
 
 
 def db() -> sqlite3.Connection:
+    """Abre uma conexão configurada para segurança e acesso por nomes de coluna."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(DB_PATH, timeout=30)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
@@ -16,8 +20,9 @@ def db() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    DATA_DIR.mkdir(exist_ok=True)
-    BACKUP_DIR.mkdir(exist_ok=True)
+    """Cria pastas, tabelas e valores iniciais quando o sistema inicia."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     with closing(db()) as con:
         con.executescript(
             """
@@ -41,6 +46,7 @@ def init_db() -> None:
                 ON etiquetas(criada_em DESC);
             """
         )
+        # Estes valores só são inseridos na primeira execução.
         defaults = {
             "proximo_contador": "1",
             "filial": "04",
@@ -49,6 +55,10 @@ def init_db() -> None:
             "comprimento_mm": "60",
             "dpi": "203",
             "impressora": "",
+            "velocidade_ips": "3",
+            "tonalidade": "10",
+            "deslocamento_x_mm": "0",
+            "deslocamento_y_mm": "0",
         }
         con.executemany(
             "INSERT OR IGNORE INTO config(chave, valor) VALUES (?, ?)",

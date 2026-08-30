@@ -28,6 +28,11 @@ Em **Configurações**, informe o nome exato da impressora instalada no Windows.
 O envio é RAW/ZPL. O arquivo de impressão também pode ser baixado com extensão
 `.prn` para envio pelo driver ou por outro sistema.
 
+O perfil de impressão é preparado para a **Zebra ZD220**: 203 dpi, largura
+imprimível máxima de 104 mm, detecção automática da mídia e velocidade entre
+2 e 4 ips. Se a arte sair deslocada, use as correções horizontal e vertical em
+Configurações; esses ajustes não alteram as dimensões da etiqueta.
+
 O `.prn` contém comandos ZPL prontos e não é um projeto editável do
 ZebraDesigner Essentials. Projetos do ZebraDesigner usam o formato próprio
 `.nlbl`; para este aplicativo, edite a etiqueta na tela e use **Imprimir na
