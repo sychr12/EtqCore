@@ -111,6 +111,23 @@ class _Zpl:
             f"^FO{x},{ty}{reverse_cmd}^A0N,{font},{font}^FB{max(1, w)},1,0,{align},0^FD{zpl_text(text)}^FS"
         )
 
+    def text_wrapped(
+        self, x: int, y: int, w: int, h: int, text: str,
+        max_font: int, min_font: int, align: str = "C",
+    ) -> None:
+        """Escreve em uma ou duas linhas, quebrando somente quando necessário."""
+        one_line_font = _fit_font(text, w, h, max_font, min_font)
+        if len(text) * one_line_font * 0.61 <= w:
+            self.text(x, y, w, h, text, max_font, min_font, align=align)
+            return
+        font = _fit_font(text, w * 2, max(12, h // 2), max_font, min_font)
+        line_gap = 2
+        block_h = min(h, font * 2 + line_gap)
+        ty = y + max(0, (h - block_h) // 2)
+        self.lines.append(
+            f"^FO{x},{ty}^A0N,{font},{font}^FB{max(1, w)},2,{line_gap},{align},0^FD{zpl_text(text)}^FS"
+        )
+
     def render(self) -> str:
         return "\n".join(self.lines)
 
@@ -125,10 +142,15 @@ def _stat_cell(
     label: str,
     value: str,
     value_align: str = "L",
+    label_align: str = "L",
     label_font: int = 18,
     value_font: int = 38,
     label_offset: int = 0,
     value_offset: int = 0,
+    secondary_value: str = "",
+    secondary_font: int = 24,
+    primary_ratio: float = 0.62,
+    wrap_value: bool = False,
 ) -> None:
     """Célula com margem de segurança e fonte ajustada à largura/altura."""
     w = max(1, int(w))
@@ -152,19 +174,40 @@ def _stat_cell(
         label,
         max_font=min(label_font, label_h - 2),
         min_font=10,
-        align="L",
+        align=label_align,
     )
 
-    z.text(
-        x + pad,
-        value_y,
-        inner_w,
-        value_h,
-        value,
-        max_font=min(value_font, value_h - 2),
-        min_font=12,
-        align=value_align,
-    )
+    if secondary_value:
+        primary_h = max(12, int(value_h * primary_ratio))
+        secondary_h = max(10, value_h - primary_h)
+        z.text(
+            x + pad, value_y, inner_w, primary_h, value,
+            max_font=min(value_font, primary_h - 2), min_font=12,
+            align=value_align,
+        )
+        z.text(
+            x + pad, value_y + primary_h, inner_w, secondary_h,
+            secondary_value,
+            max_font=min(secondary_font, secondary_h - 1), min_font=10,
+            align=value_align,
+        )
+    elif wrap_value:
+        z.text_wrapped(
+            x + pad, value_y, inner_w, value_h, value,
+            max_font=min(value_font, value_h - 2), min_font=12,
+            align=value_align,
+        )
+    else:
+        z.text(
+            x + pad,
+            value_y,
+            inner_w,
+            value_h,
+            value,
+            max_font=min(value_font, value_h - 2),
+            min_font=12,
+            align=value_align,
+        )
 
 
 def _inline_pair(
@@ -251,9 +294,9 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # Distribuição dos 424 dots úteis. O topo maior permite usar módulo 4
     # no QR da ZD220, mantendo as demais faixas legíveis e dentro da moldura.
     height_scale = H / 480
-    top_h = round(190 * height_scale)
-    title_h = round(64 * height_scale)
-    cod_h = round(80 * height_scale)
+    top_h = round(204 * height_scale)
+    title_h = round(60 * height_scale)
+    cod_h = round(76 * height_scale)
     bottom_h = ch - top_h - title_h - cod_h
     if bottom_h < 1:
         raise ValueError("A altura configurada não comporta o layout da etiqueta.")
@@ -304,7 +347,7 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # limites. Sem isto, moduleCount fica zero e gera ampliação inválida.
     qr_widget.getBounds()
     module_count = qr_widget.qr.moduleCount
-    qr_area = max(10, min(qr_w, top_h) - max(8, pad // 2))
+    qr_area = max(10, min(qr_w, top_h) - 2)
     # ^BQN da ZD220 aceita magnificação de 1 a 10.
     qr_mag = max(1, min(10, qr_area // max(1, module_count + 8)))
     qr_size = qr_mag * (module_count + 8)
@@ -334,28 +377,42 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     top_value_offset = max(7, row_h // 7)
     top_label_offset = max(2, row_h // 18)
     lot_label_offset = top_label_offset + max(2, row_h // 22)
+    lot_parts = str(data.get("lote_base") or "").split("/", 1)
+    lot_top = lot_parts[1] if len(lot_parts) > 1 else lot_parts[0]
+    lot_bottom = lot_parts[0] if len(lot_parts) > 1 else ""
     _stat_cell(z, table_x0, cy0, col_w, row_h, pad,
-               "LOTE DE FABRICAÇÃO", str(data.get("lote_base") or ""),
+               "LOTE DE FABRICAÇÃO", lot_top,
+               label_font=20, value_font=42,
+               label_align="C", value_align="C",
+               secondary_value=lot_bottom, secondary_font=42,
+               primary_ratio=0.50,
                label_offset=lot_label_offset,
-               value_offset=top_value_offset)
+               value_offset=max(0, top_value_offset - 6))
 
     date_col_x = table_x0 + col_w
     sub_h = row_h // 2
     date_y_offset = max(2, sub_h // 12)
     _inline_pair(z, date_col_x + pad, cy0 + pad // 2 + date_y_offset,
                  col_w - 2 * pad, sub_h - pad // 2,
-                 "DATA ", display_date(data.get("fabricacao")))
+                 "DATA ", display_date(data.get("fabricacao")),
+                 label_font=27, value_font=33, label_ratio=0.40)
     z.line_h(date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, max(1, mmw(0.0018)))
     _inline_pair(z, date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, sub_h - pad // 2,
-                 "VAL: ", display_month_year(data.get("validade")))
+                 "VAL: ", display_month_year(data.get("validade")),
+                 label_font=27, value_font=38, label_ratio=0.40)
 
-    qty_text = f"{str(data.get('quantidade') or '')} {str(data.get('unidade') or '')}".strip()
+    qty_text = str(data.get("quantidade") or "")
+    qty_unit = str(data.get("unidade") or "")
     _stat_cell(z, table_x0, cy0 + row_h, col_w, top_h - row_h, pad,
-               "QUANTIDADE", qty_text, value_font=48,
-               label_offset=top_label_offset,
-               value_offset=top_value_offset)
+               "QUANTIDADE", qty_text, value_font=50, label_font=23,
+               label_align="C", value_align="C",
+               secondary_value=qty_unit, secondary_font=30,
+               label_offset=top_label_offset + 4,
+               value_offset=max(0, top_value_offset - 6))
     _stat_cell(z, date_col_x, cy0 + row_h, col_w, top_h - row_h, pad,
-               "OPERADOR", str(data.get("operador") or ""), value_font=48,
+               "OPERADOR", str(data.get("operador") or ""), value_font=50, label_font=23,
+               label_align="C", value_align="C",
+               wrap_value=True,
                label_offset=top_label_offset,
                value_offset=top_value_offset)
 
@@ -371,12 +428,13 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # --- Linha COD / COD PROD -----------------------------------------------------
     cod_y = title_y + title_h
     cod_main_w = int(cw * 0.55)
-    _inline_pair(z, cx0 + pad, cod_y, cod_main_w - pad, cod_h,
-                 "COD: ", str(data.get("produto_codigo") or ""), label_ratio=0.24,
-                 value_font=58, label_font=34)
+    _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, pad,
+               "COD:", str(data.get("produto_codigo") or ""),
+               label_font=18, value_font=44, value_offset=pad // 2)
     z.line_v(cx0 + cod_main_w, cod_y, cod_h, border)
     _stat_cell(z, cx0 + cod_main_w, cod_y, cw - cod_main_w, cod_h, pad,
-               "COD PROD:", str(data.get("cod_prod") or ""), label_font=22, value_font=54)
+               "COD PROD:", str(data.get("cod_prod") or ""),
+               label_font=18, value_font=44, value_offset=pad // 2)
     z.line_h(cx0, cod_y + cod_h, cw, border)
 
     # --- Linha inferior: MEDIDAS + logo -----------------------------------------------

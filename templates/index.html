@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=29" />
+    <link rel="stylesheet" href="/static/style.css?v=62" />
   </head>
 
   <body>
@@ -80,12 +80,11 @@
               </div>
 
               <div>
-                <label>Tipo (T) *</label>
+                <label>Tipo (T) — opcional</label>
                 <input
                   name="tipo"
                   value=""
                   placeholder="CAPA"
-                  required
                 />
               </div>
 
@@ -295,10 +294,10 @@
                         <span class="cellLabel">
                           LOTE DE FABRICAÇÃO
                         </span>
-                        <span
-                          class="cellValue"
-                          data-out="lote_base"
-                        ></span>
+                        <span class="cellValue lotStack" data-out-lot="1">
+                          <span class="lotTop"></span>
+                          <span class="lotBottom"></span>
+                        </span>
                       </div>
 
                       <div class="cell">
@@ -323,10 +322,10 @@
                         <span class="cellLabel">
                           QUANTIDADE
                         </span>
-                        <span
-                          class="cellValue"
-                          data-out-qty="1"
-                        ></span>
+                        <span class="cellValue qtyStack" data-out-qty="1">
+                          <span class="qtyNumber"></span>
+                          <span class="qtyUnit"></span>
+                        </span>
                       </div>
 
                       <div class="cell big">
@@ -724,7 +723,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=15"
+      src="/static/app.js?v=20"
       defer
     ></script>
   </body>
