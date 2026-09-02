@@ -1522,6 +1522,103 @@ button.print {
     border-radius: 14px;
 }
 
+/* Relatório mensal: escolha o período e mostra onde o Excel foi salvo. */
+.monthlyReportPanel {
+    margin: 20px 0;
+    padding: 18px;
+    border: 1px solid #cfe3de;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f5fbf9, #f8fafc);
+}
+
+.monthlyReportHeading {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+}
+
+.monthlyReportHeading h3 { margin: 0 0 4px; color: #173b56; font-size: 17px; }
+.monthlyReportHeading p { margin: 0; color: #667b8d; font-size: 13px; }
+.reportIcon {
+    display: grid;
+    place-items: center;
+    min-width: 46px;
+    height: 38px;
+    border-radius: 9px;
+    background: #107c41;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .04em;
+}
+
+.monthlyReportControls {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.monthlyReportControls label { min-width: 150px; color: #40566a; font-size: 12px; font-weight: 800; }
+.monthlyReportControls select { width: 100%; margin-top: 6px; }
+.monthlyDownload[hidden] { display: none; }
+.reportPath {
+    margin-top: 13px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #edf3f6;
+    color: #53697a;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.reportPath.ok { background: #e4f6ef; color: #08735b; }
+.reportPath.error { background: #fff0f0; color: #b42318; }
+.reportSummary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+.reportSummary > div {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid #dbe7e4;
+    border-radius: 9px;
+    background: rgba(255,255,255,.8);
+}
+.reportSummary span { display: block; color: #718392; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.reportSummary strong { display: block; margin-top: 5px; color: #173b56; font-size: 15px; overflow-wrap: anywhere; }
+.reportFolderCard button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-color: #b9d9d1;
+    background: #e9f7f3;
+    color: #08705f;
+    font-size: 11px;
+}
+.reportFolderSetting small {
+    display: block;
+    margin-top: 7px;
+    color: #6b7d8d;
+    font-size: 11px;
+    line-height: 1.45;
+}
+.folderPickerButton {
+    width: fit-content;
+    margin-top: 8px;
+    border-color: #bfd8d2;
+    background: #eef8f5;
+    color: #096c5d;
+}
+
+@media (max-width: 640px) {
+    .monthlyReportControls > * { width: 100%; }
+    .monthlyReportControls label { min-width: 0; }
+    .reportSummary { grid-template-columns: 1fr; }
+}
+
 table {
     width: 100%;
 

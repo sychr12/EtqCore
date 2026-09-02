@@ -13,6 +13,14 @@ from services.contador import identifier_for_counter, visible_counter
 from services.geracao import gerar_lote
 from services.impressao import installed_printers, recommended_zebra
 from services.qrcode_service import qr_payload, render_svg
+from services.relatorio_excel import (
+    caminho_relatorio,
+    caminho_relatorio_anual,
+    criar_relatorio_anual,
+    criar_relatorio_mensal,
+    escolher_pasta_windows,
+    testar_pasta,
+)
 from services.texto import quantity_x1000
 from services.texto import dots
 from services.validacao import validate_label, validate_settings
@@ -34,6 +42,119 @@ def state():
             {"identificador": last["identificador"], "dados": json.loads(last["dados_json"])} if last else None
         ),
     })
+
+
+@api_bp.get("/relatorios/periodos")
+def report_periods():
+    """Lista os meses disponíveis para preencher os filtros da interface."""
+    return jsonify(etiqueta_model.listar_periodos())
+
+
+@api_bp.post("/relatorios/mensal")
+def create_monthly_report():
+    """Cria a planilha dentro de dados/relatorios/ANO/MÊS."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        ano, mes = int(payload.get("ano")), int(payload.get("mes"))
+        etiquetas = etiqueta_model.listar_por_periodo(ano, mes)
+        pasta = config_model.obter_todas().get("pasta_relatorios")
+        testar_pasta(pasta)
+        arquivo = criar_relatorio_mensal(ano, mes, etiquetas, pasta)
+    except (OSError, TypeError, ValueError) as exc:
+        return jsonify({"erro": str(exc) or "Ano ou mês inválido."}), 400
+    return jsonify({
+        "ok": True,
+        "total": len(etiquetas),
+        "arquivo": str(arquivo),
+        "download": f"/api/relatorios/mensal/{ano:04d}/{mes:02d}",
+    })
+
+
+@api_bp.get("/relatorios/mensal/<int:ano>/<int:mes>")
+def download_monthly_report(ano: int, mes: int):
+    """Baixa uma planilha já criada, sem expor outros caminhos do computador."""
+    try:
+        arquivo = caminho_relatorio(ano, mes, config_model.obter_todas().get("pasta_relatorios"))
+    except ValueError as exc:
+        return jsonify({"erro": str(exc)}), 400
+    if not arquivo.exists():
+        return jsonify({"erro": "Gere a planilha deste período primeiro."}), 404
+    return send_file(arquivo, as_attachment=True, download_name=arquivo.name)
+
+
+@api_bp.post("/relatorios/anual")
+def create_annual_report():
+    """Cria o consolidado do ano com resumo e abas dos meses utilizados."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        ano = int(payload.get("ano"))
+        if not 2000 <= ano <= 2100:
+            raise ValueError("Ano inválido.")
+        etiquetas = etiqueta_model.listar_por_ano(ano)
+        pasta = config_model.obter_todas().get("pasta_relatorios")
+        testar_pasta(pasta)
+        arquivo = criar_relatorio_anual(ano, etiquetas, pasta)
+    except (OSError, TypeError, ValueError) as exc:
+        return jsonify({"erro": str(exc) or "Ano inválido."}), 400
+    return jsonify({
+        "ok": True,
+        "total": len(etiquetas),
+        "arquivo": str(arquivo),
+        "download": f"/api/relatorios/anual/{ano:04d}",
+    })
+
+
+@api_bp.get("/relatorios/anual/<int:ano>")
+def download_annual_report(ano: int):
+    """Baixa o consolidado anual já criado."""
+    try:
+        arquivo = caminho_relatorio_anual(ano, config_model.obter_todas().get("pasta_relatorios"))
+    except ValueError as exc:
+        return jsonify({"erro": str(exc)}), 400
+    if not arquivo.exists():
+        return jsonify({"erro": "Gere a planilha anual primeiro."}), 404
+    return send_file(arquivo, as_attachment=True, download_name=arquivo.name)
+
+
+@api_bp.post("/relatorios/pasta/testar")
+def test_reports_folder():
+    """Testa uma pasta local ou compartilhada antes de salvar a configuração."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        pasta = str(payload.get("pasta") or "").strip()
+        if not pasta:
+            raise ValueError("Informe a pasta dos relatórios.")
+        destino = testar_pasta(pasta)
+        return jsonify({"ok": True, "pasta": str(destino)})
+    except (OSError, ValueError) as exc:
+        return jsonify({"erro": str(exc)}), 400
+
+
+@api_bp.post("/relatorios/pasta/escolher")
+def choose_reports_folder():
+    """Abre o seletor de pastas do Windows e devolve a escolha para a tela."""
+    payload = request.get_json(silent=True) or {}
+    atual = str(payload.get("pasta_atual") or config_model.obter_todas().get("pasta_relatorios") or "")
+    try:
+        escolha = escolher_pasta_windows(atual)
+        return jsonify({"ok": True, "cancelado": escolha is None, "pasta": escolha})
+    except (OSError, RuntimeError) as exc:
+        return jsonify({"erro": str(exc)}), 500
+
+
+@api_bp.post("/relatorios/pasta/configurar")
+def configure_reports_folder():
+    """Testa e salva somente o destino dos relatórios, sem alterar a impressora."""
+    payload = request.get_json(silent=True) or {}
+    try:
+        pasta = str(payload.get("pasta") or "").strip()
+        if not pasta:
+            raise ValueError("Escolha uma pasta para os relatórios.")
+        destino = testar_pasta(pasta)
+        config_model.salvar({"pasta_relatorios": str(destino)})
+        return jsonify({"ok": True, "pasta": str(destino)})
+    except (OSError, ValueError) as exc:
+        return jsonify({"erro": str(exc)}), 400
 
 
 @api_bp.post("/config")

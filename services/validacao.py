@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+from config import REPORTS_DIR
+
 from .texto import clean
 
 
@@ -85,14 +87,18 @@ def validate_settings(body: object) -> dict[str, str]:
     if not branch or len(branch) > 10:
         raise ValueError("Informe uma filial com até 10 caracteres.")
     printer = clean(body.get("impressora"))
+    reports_folder = str(body.get("pasta_relatorios") or REPORTS_DIR).strip()
     prefix = clean(body.get("prefixo_contador")) or "TB"
     if len(prefix) > 8:
         raise ValueError("O prefixo do contador aceita no máximo 8 caracteres.")
     if len(printer) > 260:
         raise ValueError("O nome da impressora aceita no máximo 260 caracteres.")
+    if not reports_folder or len(reports_folder) > 500 or "\x00" in reports_folder:
+        raise ValueError("Informe uma pasta válida para salvar os relatórios.")
     return {
         "largura_mm": f"{width:g}", "comprimento_mm": f"{height:g}",
         "dpi": str(dpi), "impressora": printer,
+        "pasta_relatorios": reports_folder,
         "prefixo_contador": prefix,
         "filial": branch,
         "velocidade_ips": str(speed),

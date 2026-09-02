@@ -2,6 +2,25 @@
 
 Aplicativo local para criar etiquetas ZPL com QR Code e contador persistente.
 
+## Relatórios mensais em Excel
+
+Na aba **Histórico**, escolha o relatório mensal ou anual e clique para criar o Excel.
+O arquivo reúne todas as etiquetas do período, inclui resumo de sucessos e falhas,
+filtros e cabeçalhos fixos. O relatório anual possui um resumo dos 12 meses e uma
+aba detalhada para cada mês que tiver etiquetas.
+
+Por padrão, as planilhas ficam fora da pasta do código, em
+`Documentos/Relatorios Etiquetas`. Em **Configurações**, o destino pode ser uma
+pasta local, uma unidade mapeada ou uma pasta compartilhada como
+`\\SERVIDOR\Etiquetas`. Os arquivos são organizados assim:
+
+O botão **Escolher pasta no Windows…** abre o seletor visual; também é possível
+digitar ou colar diretamente um caminho de rede no campo.
+
+`PASTA ESCOLHIDA/ANO/MÊS/etiquetas-ANO-MÊS.xlsx`
+
+`PASTA ESCOLHIDA/ANO/etiquetas-ANO-anual.xlsx`
+
 ## Como abrir
 
 Clique duas vezes em `Iniciar Etiquetas Zebra.bat`. O navegador abrirá em

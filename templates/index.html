@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=29" />
+    <link rel="stylesheet" href="/static/style.css?v=30" />
   </head>
 
   <body>
@@ -30,17 +30,14 @@
 
     <nav>
       <button class="active" data-tab="editor">
-        <span class="navIcon">✦</span>
         Criar etiqueta
       </button>
 
       <button data-tab="history">
-        <span class="navIcon">◷</span>
         Histórico
       </button>
 
       <button data-tab="settings">
-        <span class="navIcon">⚙</span>
         Configurações
       </button>
     </nav>
@@ -69,7 +66,6 @@
           ======================================================= -->
           <div class="card editorCard">
             <h2 class="cardTitle">
-              <span class="cardIcon">✎</span>
               Informações da etiqueta
             </h2>
 
@@ -211,11 +207,11 @@
 
             <div class="actions productionActions">
               <button class="previewAction" id="viewPrintPreview">
-                ◉ Visualizar antes de imprimir
+                Visualizar antes de imprimir
               </button>
 
               <button class="printFile" id="download">
-                ↓ Gerar arquivo da impressora (.prn)
+                Gerar arquivo da impressora (.prn)
               </button>
 
               <div class="printGroup productionGroup">
@@ -252,7 +248,6 @@
           ======================================================= -->
           <div class="card previewCard">
             <h2 class="cardTitle">
-              <span class="cardIcon">▣</span>
               Prova de impressão
             </h2>
 
@@ -460,21 +455,71 @@
 
         <div class="card">
           <h2 class="cardTitle">
-            <span class="cardIcon">◷</span>
             Etiquetas registradas
           </h2>
 
           <div class="actions">
             <button id="refreshHistory">
-              ↻ Atualizar
+              Atualizar
             </button>
 
             <a
               class="button"
               href="/api/backup"
             >
-              ↓ Baixar backup do contador
+              Baixar backup do contador
             </a>
+          </div>
+
+          <div class="monthlyReportPanel">
+            <div class="monthlyReportHeading">
+              <span class="reportIcon">XLSX</span>
+              <div>
+                <h3>Central de relatórios em Excel</h3>
+                <p>
+                  Gere um mês específico ou um consolidado anual completo,
+                  sempre organizado automaticamente em pastas.
+                </p>
+              </div>
+            </div>
+
+            <div class="monthlyReportControls">
+              <label>
+                Relatório
+                <select id="reportType" aria-label="Tipo do relatório">
+                  <option value="mensal">Mensal detalhado</option>
+                  <option value="anual">Anual consolidado</option>
+                </select>
+              </label>
+              <label>
+                Ano
+                <select id="reportYear" aria-label="Ano do relatório"></select>
+              </label>
+              <label id="reportMonthField">
+                Mês
+                <select id="reportMonth" aria-label="Mês do relatório"></select>
+              </label>
+              <button class="primary" id="generateMonthlyReport">
+                Criar relatório mensal
+              </button>
+              <a class="button monthlyDownload" id="downloadMonthlyReport" hidden>
+                Baixar planilha
+              </a>
+            </div>
+
+            <div class="reportSummary" aria-live="polite">
+              <div><span>Período</span><strong id="reportPeriodLabel">—</strong></div>
+              <div><span>Etiquetas encontradas</span><strong id="reportPeriodTotal">0</strong></div>
+              <div class="reportFolderCard">
+                <span>Local de salvamento</span>
+                <strong id="reportFolderPreview">ANO / MÊS</strong>
+                <button id="changeReportFolder" type="button">Escolher onde salvar...</button>
+              </div>
+            </div>
+
+            <div id="monthlyReportStatus" class="reportPath">
+              Escolha o período para gerar o relatório.
+            </div>
           </div>
 
           <div class="tableWrap">
@@ -514,7 +559,6 @@
 
         <div class="card settings">
           <h2 class="cardTitle">
-            <span class="cardIcon">⚙</span>
             Etiqueta e impressora
           </h2>
 
@@ -578,6 +622,23 @@
               <datalist id="printerOptions"></datalist>
             </div>
 
+            <div class="span2 reportFolderSetting">
+              <label>Pasta externa dos relatórios Excel</label>
+              <input
+                name="pasta_relatorios"
+                maxlength="500"
+                placeholder="Ex.: C:\Relatorios Etiquetas ou \\SERVIDOR\Etiquetas"
+                required
+              />
+              <button class="folderPickerButton" id="chooseReportsFolder" type="button">
+                Escolher pasta no Windows...
+              </button>
+              <small>
+                Para outra máquina acessar, informe uma pasta compartilhada da rede
+                ou uma unidade mapeada com permissão de gravação.
+              </small>
+            </div>
+
             <div>
               <label>Velocidade de impressão</label>
               <select name="velocidade_ips">
@@ -606,6 +667,10 @@
           <div class="actions">
             <button id="findPrinters">
               Procurar impressoras no Windows
+            </button>
+
+            <button id="testReportsFolder" type="button">
+              Testar pasta dos relatórios
             </button>
             <button
               class="primary"
@@ -724,7 +789,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=15"
+      src="/static/app.js?v=20"
       defer
     ></script>
   </body>

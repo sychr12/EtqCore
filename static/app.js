@@ -30,7 +30,7 @@ async function updatePreview() { const d = values(); document.querySelectorAll('
 async function showPrintPreview() { if (!form.reportValidity()) return; setBusy(true, 'Preparando visualização', 'Gerando QR e conferindo dimensões'); try { const result = await updatePreview(); if (!result || !lastPrintProfile) throw new Error('Não foi possível gerar a prova da etiqueta. Confira os campos.'); const modal = document.querySelector('#printPreviewModal'), canvas = document.querySelector('#printPreviewCanvas'), clone = document.querySelector('#previewLabel').cloneNode(true), p = lastPrintProfile; clone.removeAttribute('id'); clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id')); clone.querySelectorAll('*').forEach(el => el.style.removeProperty('font-size')); clone.style.aspectRatio = `${p.largura_mm}/${p.comprimento_mm}`; canvas.replaceChildren(clone); document.querySelector('#printPreviewMeta').textContent = `${p.largura_mm} × ${p.comprimento_mm} mm • ${p.dpi} dpi • ${p.largura_dots} × ${p.comprimento_dots} dots`; modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); fitLabelTexts(clone); document.querySelector('#closePrintPreview').focus() } catch (error) { status(error.message, 'error') } finally { setBusy(false) } }
 function closePrintPreview() { const modal = document.querySelector('#printPreviewModal'); modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true') }
 form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(updatePreview, 250) });
-function showToast(message, type = 'info') { const host = document.querySelector('#toasts'), toast = document.createElement('div'), icon = document.createElement('div'), text = document.createElement('div'), title = document.createElement('strong'), detail = document.createElement('span'); toast.className = 'toast ' + type; icon.className = 'toastIcon'; icon.textContent = type === 'error' ? '×' : type === 'ok' ? '✓' : 'i'; text.className = 'toastText'; title.textContent = type === 'error' ? 'Atenção' : type === 'ok' ? 'Concluído' : 'Informação'; detail.textContent = message; text.append(title, detail); toast.append(icon, text); host.append(toast); setTimeout(() => { toast.classList.add('out'); setTimeout(() => toast.remove(), 320) }, 4500) }
+function showToast(message, type = 'info') { const host = document.querySelector('#toasts'), toast = document.createElement('div'), text = document.createElement('div'), title = document.createElement('strong'), detail = document.createElement('span'); toast.className = 'toast ' + type; text.className = 'toastText'; title.textContent = type === 'error' ? 'Atenção' : type === 'ok' ? 'Concluído' : 'Informação'; detail.textContent = message; text.append(title, detail); toast.append(text); host.append(toast); setTimeout(() => { toast.classList.add('out'); setTimeout(() => toast.remove(), 320) }, 4500) }
 function status(msg, type = '') { const e = document.querySelector('#status'); e.textContent = msg; e.className = 'status ' + type; if (type) showToast(msg, type) }
 function setBusy(active, title = 'Processando etiqueta', message = 'Aguarde') { const overlay = document.querySelector('#busyOverlay'); document.querySelector('#busyTitle').textContent = title; document.querySelector('#busyMessage').childNodes[0].nodeValue = message; overlay.classList.toggle('show', active); overlay.setAttribute('aria-hidden', String(!active)); for (const id of ['print', 'download', 'saveProject', 'saveSettings']) { const button = document.querySelector('#' + id); if (button) button.disabled = active } }
 function confirmAction(title, message, confirmText = 'Confirmar') { return new Promise(resolve => { const modal = document.querySelector('#confirmModal'), ok = document.querySelector('#confirmOk'), cancel = document.querySelector('#confirmCancel'); document.querySelector('#confirmTitle').textContent = title; document.querySelector('#confirmMessage').textContent = message; ok.textContent = confirmText; modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); const finish = value => { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); ok.onclick = null; cancel.onclick = null; window.removeEventListener('keydown', onKey); resolve(value) }, onKey = e => { if (e.key === 'Escape') finish(false) }; ok.onclick = () => finish(true); cancel.onclick = () => finish(false); window.addEventListener('keydown', onKey); setTimeout(() => ok.focus(), 120) }) }
@@ -43,9 +43,131 @@ document.querySelector('#download').onclick = () => generate('download'); docume
 document.querySelector('#viewPrintPreview').onclick = showPrintPreview; document.querySelector('#closePrintPreview').onclick = closePrintPreview; document.querySelector('#printPreviewModal').addEventListener('click', e => { if (e.target.id === 'printPreviewModal') closePrintPreview() }); window.addEventListener('keydown', e => { if (e.key === 'Escape' && document.querySelector('#printPreviewModal').classList.contains('show')) closePrintPreview() });
 document.querySelector('#viewPrintPreviewTop').onclick = showPrintPreview;
 document.querySelector('#findPrinters').onclick = () => findPrinters(true);
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button,.tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.querySelector('#' + b.dataset.tab).classList.add('active'); if (b.dataset.tab === 'history') loadHistory() });
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { document.querySelectorAll('nav button,.tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.querySelector('#' + b.dataset.tab).classList.add('active'); if (b.dataset.tab === 'history') Promise.all([loadHistory(), loadReportPeriods()]) });
 document.querySelector('#saveSettings').onclick = async () => { const settingsForm = document.querySelector('#settingsForm'), out = document.querySelector('#settingsStatus'); if (!settingsForm.reportValidity()) return; setBusy(true, 'Salvando configurações', 'Aplicando filial, dimensões e impressora'); try { const d = Object.fromEntries(new FormData(settingsForm)), r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }), x = await r.json(); if (!r.ok) throw new Error(x.erro); out.textContent = 'Configurações salvas.'; out.className = 'status ok'; await loadState(); await updatePreview(); showToast(`Filial ${cfg.filial} e configurações aplicadas.`, 'ok') } catch (e) { out.textContent = e.message; out.className = 'status error'; showToast(e.message, 'error') } finally { setBusy(false) } };
-async function loadHistory() { const body = document.querySelector('#historyRows'); body.innerHTML = '<tr><td colspan="8">Carregando histórico…</td></tr>'; try { const response = await fetch('/api/historico'); if (!response.ok) throw new Error('Não foi possível carregar o histórico.'); const rows = await response.json(); historyCache = Object.fromEntries(rows.map(x => [x.id, x])); body.innerHTML = rows.map(x => `<tr><td><strong>${escapeHtml(x.identificador)}</strong></td><td>${escapeHtml(x.criada_em.replace('T', ' '))}</td><td>${escapeHtml(x.dados.produto_codigo || '')}</td><td>${escapeHtml(x.dados.lote_controle || '')}</td><td>${escapeHtml(x.destino)}</td><td><span class="badge ${x.sucesso ? '' : 'fail'}">${x.sucesso ? 'OK' : 'Falha'}</span>${x.erro ? `<br><small title="${escapeHtml(x.erro)}">${escapeHtml(x.erro.slice(0, 45))}</small>` : ''}</td><td><button class="smallButton" onclick="reuseHistory(${Number(x.id)})">↗ Usar novamente</button></td><td><a class="button smallButton" href="/api/etiqueta/${Number(x.id)}.prn">↓ PRN</a></td></tr>`).join('') || '<tr><td colspan="8">Nenhuma etiqueta gerada.</td></tr>' } catch (e) { body.innerHTML = '<tr><td colspan="8">Não foi possível carregar o histórico.</td></tr>'; showToast(e.message, 'error') } }
+async function loadHistory() { const body = document.querySelector('#historyRows'); body.innerHTML = '<tr><td colspan="8">Carregando histórico...</td></tr>'; try { const response = await fetch('/api/historico'); if (!response.ok) throw new Error('Não foi possível carregar o histórico.'); const rows = await response.json(); historyCache = Object.fromEntries(rows.map(x => [x.id, x])); body.innerHTML = rows.map(x => `<tr><td><strong>${escapeHtml(x.identificador)}</strong></td><td>${escapeHtml(x.criada_em.replace('T', ' '))}</td><td>${escapeHtml(x.dados.produto_codigo || '')}</td><td>${escapeHtml(x.dados.lote_controle || '')}</td><td>${escapeHtml(x.destino)}</td><td><span class="badge ${x.sucesso ? '' : 'fail'}">${x.sucesso ? 'OK' : 'Falha'}</span>${x.erro ? `<br><small title="${escapeHtml(x.erro)}">${escapeHtml(x.erro.slice(0, 45))}</small>` : ''}</td><td><button class="smallButton" onclick="reuseHistory(${Number(x.id)})">Usar novamente</button></td><td><a class="button smallButton" href="/api/etiqueta/${Number(x.id)}.prn">PRN</a></td></tr>`).join('') || '<tr><td colspan="8">Nenhuma etiqueta gerada.</td></tr>' } catch (e) { body.innerHTML = '<tr><td colspan="8">Não foi possível carregar o histórico.</td></tr>'; showToast(e.message, 'error') } }
 function reuseHistory(id) { const item = historyCache[id]; if (!item) return; fillForm(item.dados); document.querySelectorAll('nav button,.tab').forEach(x => x.classList.remove('active')); document.querySelector('nav button[data-tab="editor"]').classList.add('active'); document.querySelector('#editor').classList.add('active'); status(`Dados da etiqueta ${item.identificador} carregados. Uma nova impressão receberá outro contador.`, 'ok') }
 const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); document.querySelector('#refreshHistory').onclick = loadHistory;
+
+const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+let reportPeriods = [];
+function updateReportSummary() {
+  const type = document.querySelector('#reportType').value, ano = Number(document.querySelector('#reportYear').value), mes = Number(document.querySelector('#reportMonth').value);
+  const annual = type === 'anual';
+  document.querySelector('#reportMonthField').hidden = annual;
+  document.querySelector('#reportPeriodLabel').textContent = annual ? String(ano) : `${MONTH_NAMES[mes - 1]} de ${ano}`;
+  const rows = reportPeriods.filter(item => Number(item.ano) === ano && (annual || Number(item.mes) === mes));
+  document.querySelector('#reportPeriodTotal').textContent = rows.reduce((sum, item) => sum + Number(item.total), 0).toLocaleString('pt-BR');
+  const base = cfg.pasta_relatorios || 'Pasta externa';
+  document.querySelector('#reportFolderPreview').textContent = annual ? `${base} / ${ano} / etiquetas-${ano}-anual.xlsx` : `${base} / ${ano} / ${String(mes).padStart(2, '0')}`;
+  document.querySelector('#generateMonthlyReport').textContent = annual ? 'Criar relatório anual' : 'Criar relatório mensal';
+  const download = document.querySelector('#downloadMonthlyReport'); download.hidden = true;
+  document.querySelector('#monthlyReportStatus').textContent = 'Confira o período e clique em criar relatório.';
+  document.querySelector('#monthlyReportStatus').className = 'reportPath';
+}
+async function loadReportPeriods() {
+  const year = document.querySelector('#reportYear'), month = document.querySelector('#reportMonth');
+  if (year.options.length && month.options.length) return;
+  const now = new Date();
+  try {
+    const response = await fetch('/api/relatorios/periodos');
+    if (!response.ok) throw new Error('Não foi possível consultar os períodos.');
+    const periods = await response.json(); reportPeriods = periods;
+    const years = [...new Set([now.getFullYear(), ...periods.map(item => Number(item.ano))])].sort((a, b) => b - a);
+    year.replaceChildren(...years.map(value => Object.assign(document.createElement('option'), { value, textContent: value })));
+    month.replaceChildren(...MONTH_NAMES.map((name, index) => Object.assign(document.createElement('option'), { value: index + 1, textContent: `${String(index + 1).padStart(2, '0')} — ${name}` })));
+    year.value = String(periods[0]?.ano || now.getFullYear());
+    month.value = String(Number(periods[0]?.mes || now.getMonth() + 1));
+    updateReportSummary();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+async function generateMonthlyReport() {
+  const tipo = document.querySelector('#reportType').value, ano = Number(document.querySelector('#reportYear').value), mes = Number(document.querySelector('#reportMonth').value), anual = tipo === 'anual';
+  const output = document.querySelector('#monthlyReportStatus'), download = document.querySelector('#downloadMonthlyReport');
+  setBusy(true, anual ? 'Criando relatório anual' : 'Criando planilha mensal', anual ? `Consolidando todas as etiquetas de ${ano}` : `Organizando as etiquetas de ${MONTH_NAMES[mes - 1]} de ${ano}`);
+  download.hidden = true;
+  try {
+    const response = await fetch(anual ? '/api/relatorios/anual' : '/api/relatorios/mensal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ano, mes }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.erro || 'Não foi possível criar a planilha.');
+    output.textContent = `${result.total} etiqueta(s) salva(s) em ${result.arquivo}`;
+    output.className = 'reportPath ok';
+    download.href = result.download;
+    download.hidden = false;
+    showToast(anual ? 'Relatório anual criado com sucesso.' : 'Planilha mensal criada com sucesso.', 'ok');
+  } catch (error) {
+    output.textContent = error.message;
+    output.className = 'reportPath error';
+    showToast(error.message, 'error');
+  } finally {
+    setBusy(false);
+  }
+}
+document.querySelector('#generateMonthlyReport').onclick = generateMonthlyReport;
+document.querySelector('#reportType').onchange = updateReportSummary;
+document.querySelector('#reportYear').onchange = updateReportSummary;
+document.querySelector('#reportMonth').onchange = updateReportSummary;
+document.querySelector('#testReportsFolder').onclick = async () => {
+  const input = document.querySelector('#settingsForm [name="pasta_relatorios"]'), out = document.querySelector('#settingsStatus');
+  if (!input.value.trim()) { showToast('Informe uma pasta para testar.', 'error'); return }
+  setBusy(true, 'Testando pasta externa', 'Verificando permissão para criar arquivos');
+  try {
+    const response = await fetch('/api/relatorios/pasta/testar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pasta: input.value }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.erro || 'A pasta não está disponível.');
+    input.value = result.pasta;
+    out.textContent = `Pasta disponível: ${result.pasta}`;
+    out.className = 'status ok';
+    showToast('A pasta aceita gravação e pode ser usada.', 'ok');
+  } catch (error) {
+    out.textContent = error.message;
+    out.className = 'status error';
+    showToast(error.message, 'error');
+  } finally { setBusy(false) }
+};
+document.querySelector('#chooseReportsFolder').onclick = async () => {
+  const input = document.querySelector('#settingsForm [name="pasta_relatorios"]'), out = document.querySelector('#settingsStatus');
+  setBusy(true, 'Escolha a pasta', 'A janela do Windows foi aberta; selecione o destino');
+  try {
+    const response = await fetch('/api/relatorios/pasta/escolher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pasta_atual: input.value }) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.erro || 'Não foi possível abrir o seletor de pastas.');
+    if (result.cancelado) { showToast('Escolha de pasta cancelada.', 'info'); return }
+    input.value = result.pasta;
+    out.textContent = `Pasta escolhida: ${result.pasta}. Clique em Salvar configurações.`;
+    out.className = 'status ok';
+    showToast('Pasta selecionada. Agora salve as configurações.', 'ok');
+  } catch (error) {
+    out.textContent = error.message;
+    out.className = 'status error';
+    showToast(error.message, 'error');
+  } finally { setBusy(false) }
+};
+document.querySelector('#changeReportFolder').onclick = async () => {
+  const output = document.querySelector('#monthlyReportStatus');
+  setBusy(true, 'Escolha onde salvar', 'A janela do Windows foi aberta');
+  try {
+    const chooser = await fetch('/api/relatorios/pasta/escolher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pasta_atual: cfg.pasta_relatorios }) });
+    const selected = await chooser.json();
+    if (!chooser.ok) throw new Error(selected.erro || 'Não foi possível abrir o seletor.');
+    if (selected.cancelado) { showToast('A pasta atual foi mantida.', 'info'); return }
+    const save = await fetch('/api/relatorios/pasta/configurar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pasta: selected.pasta }) });
+    const result = await save.json();
+    if (!save.ok) throw new Error(result.erro || 'Não foi possível usar essa pasta.');
+    cfg.pasta_relatorios = result.pasta;
+    const settingsInput = document.querySelector('#settingsForm [name="pasta_relatorios"]');
+    if (settingsInput) settingsInput.value = result.pasta;
+    updateReportSummary();
+    output.textContent = `Novo local salvo: ${result.pasta}`;
+    output.className = 'reportPath ok';
+    showToast('Novo local de salvamento definido.', 'ok');
+  } catch (error) {
+    output.textContent = error.message;
+    output.className = 'reportPath error';
+    showToast(error.message, 'error');
+  } finally { setBusy(false) }
+};
 window.addEventListener('resize', resizePreview); loadState(true).then(() => Promise.all([updatePreview(), findPrinters(false)])).catch(e => status('Não foi possível iniciar: ' + e.message, 'error'));

@@ -10,6 +10,7 @@ from app import app
 from models import database
 from services.contador import counter_token
 from services.impressao import recommended_zebra
+from services import relatorio_excel
 from services.texto import quantity_x1000
 from services.validacao import validate_label, validate_settings
 
@@ -108,6 +109,89 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(profile["dpi"], 203)
         self.assertEqual(profile["largura_dots"], 800)
         self.assertEqual(profile["comprimento_dots"], 480)
+
+    def test_windows_folder_picker_returns_selected_path(self) -> None:
+        selected = r"C:\Relatorios Compartilhados"
+        with patch("controllers.etiquetas_controller.escolher_pasta_windows", return_value=selected):
+            response = self.client.post(
+                "/api/relatorios/pasta/escolher",
+                json={"pasta_atual": r"C:\Relatorios"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["pasta"], selected)
+        self.assertFalse(response.get_json()["cancelado"])
+
+    def test_selected_report_folder_is_saved_without_changing_printer_settings(self) -> None:
+        selected = Path(r"C:\Relatorios Compartilhados")
+        with patch("controllers.etiquetas_controller.testar_pasta", return_value=selected), \
+             patch("controllers.etiquetas_controller.config_model.salvar") as save:
+            response = self.client.post("/api/relatorios/pasta/configurar", json={"pasta": str(selected)})
+        self.assertEqual(response.status_code, 200)
+        save.assert_called_once_with({"pasta_relatorios": str(selected)})
+
+    def test_monthly_excel_is_saved_inside_year_and_month_folders(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_reports = relatorio_excel.REPORTS_DIR
+            try:
+                relatorio_excel.REPORTS_DIR = Path(directory)
+                arquivo = relatorio_excel.criar_relatorio_mensal(2026, 8, [{
+                    "id": 1,
+                    "contador": 1,
+                    "identificador": "TB0000000001",
+                    "criada_em": "2026-08-05T10:30:00",
+                    "dados": {**VALID_LABEL, "descricao": "AÇÃO ÇÃ", "operador": "252"},
+                    "destino": "imprimir",
+                    "sucesso": 1,
+                    "erro": None,
+                }])
+                self.assertEqual(arquivo, Path(directory) / "2026" / "08" / "etiquetas-2026-08.xlsx")
+                self.assertTrue(arquivo.exists())
+
+                from openpyxl import load_workbook
+                workbook = load_workbook(arquivo, read_only=True)
+                sheet = workbook["Etiquetas"]
+                self.assertEqual(sheet["A1"].value, "RELATÓRIO DE ETIQUETAS — AGOSTO DE 2026")
+                self.assertEqual(sheet["C7"].value, "TB0000000001")
+                self.assertEqual(sheet["H7"].value, "AÇÃO ÇÃ")
+                workbook.close()
+            finally:
+                relatorio_excel.REPORTS_DIR = old_reports
+
+    def test_annual_excel_has_summary_and_month_sheets(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_reports = relatorio_excel.REPORTS_DIR
+            try:
+                relatorio_excel.REPORTS_DIR = Path(directory)
+                base = {
+                    "id": 1, "contador": 1, "identificador": "TB0000000001",
+                    "dados": VALID_LABEL, "destino": "imprimir", "sucesso": 1, "erro": None,
+                }
+                arquivo = relatorio_excel.criar_relatorio_anual(2026, [
+                    {**base, "criada_em": "2026-01-10T08:00:00"},
+                    {**base, "id": 2, "contador": 2, "identificador": "TB0000000002", "criada_em": "2026-08-05T10:30:00", "sucesso": 0, "erro": "Teste"},
+                ])
+                self.assertEqual(arquivo, Path(directory) / "2026" / "etiquetas-2026-anual.xlsx")
+
+                from openpyxl import load_workbook
+                workbook = load_workbook(arquivo, read_only=True, data_only=False)
+                self.assertIn("Resumo anual", workbook.sheetnames)
+                self.assertIn("01 - Janeiro", workbook.sheetnames)
+                self.assertIn("08 - Agosto", workbook.sheetnames)
+                self.assertNotIn("02 - Fevereiro", workbook.sheetnames)
+                self.assertEqual(workbook["Resumo anual"]["B16"].value, "=SUM(B4:B15)")
+                workbook.close()
+            finally:
+                relatorio_excel.REPORTS_DIR = old_reports
+
+    def test_reports_folder_can_be_external_and_writable(self) -> None:
+        with TemporaryDirectory() as directory:
+            external = Path(directory) / "Compartilhado" / "Etiquetas"
+            resolved = relatorio_excel.testar_pasta(external)
+            self.assertTrue(resolved.is_dir())
+            self.assertFalse((resolved / ".etqcore-teste.tmp").exists())
+
+            file_path = relatorio_excel.caminho_relatorio(2026, 8, external)
+            self.assertEqual(file_path, external / "2026" / "08" / "etiquetas-2026-08.xlsx")
 
     def test_generation_reserves_unique_counters_and_returns_zpl(self) -> None:
         with TemporaryDirectory() as directory:

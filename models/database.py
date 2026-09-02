@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from contextlib import closing
 
-from config import DATA_DIR, DB_PATH, BACKUP_DIR
+from config import DATA_DIR, DB_PATH, BACKUP_DIR, REPORTS_DIR
 
 
 def db() -> sqlite3.Connection:
@@ -55,6 +55,7 @@ def init_db() -> None:
             "comprimento_mm": "60",
             "dpi": "203",
             "impressora": "",
+            "pasta_relatorios": str(REPORTS_DIR),
             "velocidade_ips": "3",
             "tonalidade": "10",
             "deslocamento_x_mm": "0",

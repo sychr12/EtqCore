@@ -69,6 +69,50 @@ def listar_historico(limite: int = 200) -> list[dict]:
     return resultado
 
 
+def listar_por_periodo(ano: int, mes: int) -> list[dict]:
+    """Busca todas as etiquetas de um mês, sem limitar a quantidade."""
+    inicio = f"{ano:04d}-{mes:02d}-01"
+    fim = f"{ano + 1:04d}-01-01" if mes == 12 else f"{ano:04d}-{mes + 1:02d}-01"
+    with closing(db()) as con:
+        rows = con.execute(
+            "SELECT id, contador, identificador, criada_em, dados_json, destino, sucesso, erro "
+            "FROM etiquetas WHERE criada_em >= ? AND criada_em < ? ORDER BY criada_em, id",
+            (inicio, fim),
+        ).fetchall()
+    resultado = []
+    for row in rows:
+        item = dict(row)
+        item["dados"] = json.loads(item.pop("dados_json"))
+        resultado.append(item)
+    return resultado
+
+
+def listar_por_ano(ano: int) -> list[dict]:
+    """Busca todas as etiquetas registradas durante um ano."""
+    with closing(db()) as con:
+        rows = con.execute(
+            "SELECT id, contador, identificador, criada_em, dados_json, destino, sucesso, erro "
+            "FROM etiquetas WHERE criada_em >= ? AND criada_em < ? ORDER BY criada_em, id",
+            (f"{ano:04d}-01-01", f"{ano + 1:04d}-01-01"),
+        ).fetchall()
+    resultado = []
+    for row in rows:
+        item = dict(row)
+        item["dados"] = json.loads(item.pop("dados_json"))
+        resultado.append(item)
+    return resultado
+
+
+def listar_periodos() -> list[dict]:
+    """Informa os anos e meses que possuem etiquetas no histórico."""
+    with closing(db()) as con:
+        rows = con.execute(
+            "SELECT substr(criada_em,1,4) AS ano, substr(criada_em,6,2) AS mes, COUNT(*) AS total "
+            "FROM etiquetas GROUP BY ano, mes ORDER BY ano DESC, mes DESC"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def obter_zpl(label_id: int) -> sqlite3.Row | None:
     """Recupera o arquivo de impressão de uma etiqueta específica."""
     with closing(db()) as con:
