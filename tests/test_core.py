@@ -58,6 +58,10 @@ class ValidationTests(unittest.TestCase):
         result = validate_label({**VALID_LABEL, "descricao": "Produto^\nTeste"})
         self.assertEqual(result["descricao"], "Produto  Teste")
 
+    def test_tipo_is_optional(self) -> None:
+        result = validate_label({**VALID_LABEL, "tipo": ""})
+        self.assertEqual(result["tipo"], "")
+
     def test_text_is_normalized_for_utf8_zpl(self) -> None:
         result = validate_label({**VALID_LABEL, "descricao": "AÇA\u0303O"})
         self.assertEqual(result["descricao"], "AÇÃO")
@@ -109,6 +113,33 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(profile["dpi"], 203)
         self.assertEqual(profile["largura_dots"], 800)
         self.assertEqual(profile["comprimento_dots"], 480)
+
+    def test_preview_and_zpl_allow_empty_tipo(self) -> None:
+        label = {**VALID_LABEL, "tipo": ""}
+        response = self.client.post("/api/preview", json=label)
+        self.assertEqual(response.status_code, 200)
+        preview = response.get_json()
+        self.assertIn("(T)(P)2000000444", preview["qr"])
+
+        from services.zpl import make_zpl
+
+        zpl = make_zpl(
+            validate_label(label),
+            1,
+            "TB0000000001",
+            preview["qr"],
+            {
+                "largura_mm": "100",
+                "comprimento_mm": "60",
+                "dpi": "203",
+                "velocidade_ips": "3",
+                "tonalidade": "10",
+                "deslocamento_x_mm": "0",
+                "deslocamento_y_mm": "0",
+            },
+        )
+        self.assertIn("^XA", zpl)
+        self.assertIn("^XZ", zpl)
 
     def test_windows_folder_picker_returns_selected_path(self) -> None:
         selected = r"C:\Relatorios Compartilhados"
@@ -232,14 +263,14 @@ class ApiTests(unittest.TestCase):
                 self.assertIn("TUBETE AÇÃO ÇÃ", payload["zpl"])
                 self.assertIn("^GFA", payload["zpl"])
                 # Coluna TIPO/LOTE: bloco preto, divisor branco e textos reversos.
-                self.assertIn("^FO218,28^GB88,190,88,B,0^FS", payload["zpl"])
-                self.assertIn("^FO218,123^GB88,2,2,W,0^FS", payload["zpl"])
-                self.assertIn("^FO218,57^FR^A0N,36,36^FB88,1,0,C,0^FDCAPA^FS", payload["zpl"])
-                self.assertIn("^FO218,143^FR^A0N,54,54^FB88,1,0,C,0^FDBC^FS", payload["zpl"])
+                self.assertIn("^FO232,28^GB88,204,88,B,0^FS", payload["zpl"])
+                self.assertIn("^FO232,130^GB88,2,2,W,0^FS", payload["zpl"])
+                self.assertIn("^FO232,61^FR^A0N,36,36^FB88,1,0,C,0^FDCAPA^FS", payload["zpl"])
+                self.assertIn("^FO232,154^FR^A0N,54,54^FB88,1,0,C,0^FDBC^FS", payload["zpl"])
                 # Separadores das quatro faixas do novo layout com QR maior.
-                self.assertIn("^FO28,218^GB672,4,4,B,0^FS", payload["zpl"])
-                self.assertIn("^FO28,282^GB672,4,4,B,0^FS", payload["zpl"])
-                self.assertIn("^FO28,362^GB672,4,4,B,0^FS", payload["zpl"])
+                self.assertIn("^FO28,232^GB672,4,4,B,0^FS", payload["zpl"])
+                self.assertIn("^FO28,292^GB672,4,4,B,0^FS", payload["zpl"])
+                self.assertIn("^FO28,368^GB672,4,4,B,0^FS", payload["zpl"])
 
                 with closing(database.db()) as connection:
                     next_counter = connection.execute(

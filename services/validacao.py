@@ -28,7 +28,6 @@ LABEL_LIMITS = {
 }
 
 REQUIRED_LABEL_FIELDS = {
-    "tipo": "tipo",
     "produto_codigo": "código do produto",
     "descricao": "descrição",
     "lote_controle": "lote de controle",

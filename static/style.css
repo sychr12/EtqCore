@@ -654,7 +654,7 @@ button.print {
     flex: none;
 
     width: 100%;
-    height: 44.81cqh;
+    height: 48.11cqh;
 
     display: flex;
     align-items: stretch;
@@ -676,12 +676,10 @@ button.print {
 
     flex: none;
 
-    width: 44.81cqh;
+    width: 48.11cqh;
 
     /* Mesma zona de silêncio usada pelo QR nativo ^BQN da ZD220. */
-    padding:
-        1.05cqh
-        .55cqw;
+    padding: 0;
 
     box-sizing: border-box;
 
@@ -695,8 +693,10 @@ button.print {
 .label .qr img {
     display: block;
 
-    width: 100%;
-    height: 100%;
+    width: 96%;
+    height: 96%;
+    max-width: 96%;
+    margin: 2%;
 
     object-fit: contain;
 
@@ -913,11 +913,72 @@ button.print {
 
 /* Baixa somente os títulos principais; DATA e VAL permanecem alinhados. */
 .label .dataTable > .cell > .cellLabel {
-    transform: translateY(0.8cqh);
+    transform: translateY(0.10cqh);
 }
 
 .label .dataTable > .cell:first-child > .cellLabel {
-    transform: translateY(1.6cqh);
+    transform: translateY(2.0cqh);
+    font-size: min(1.6cqw, 4cqh);
+    align-self: center;
+    text-align: center;
+}
+
+.label .dataTable > .cell:first-child > .cellValue {
+    font-size: min(3.5cqw, 8.9cqh);
+}
+
+.label .dataTable > .cell:first-child > .lotStack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    transform: translateY(-1.15cqh);
+    gap: .45cqh;
+    line-height: 1;
+}
+
+.label .dataTable .lotStack .lotTop,
+.label .dataTable .lotStack .lotBottom {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: min(3.35cqw, 7.7cqh);
+    font-weight: 900;
+    line-height: .95;
+    letter-spacing: .01em;
+}
+
+.label .dataTable .lotStack .lotBottom {
+    margin-top: 0;
+}
+
+.label .dataTable > .cell:nth-child(3),
+.label .dataTable > .cell:nth-child(4) {
+    align-items: center;
+    text-align: center;
+}
+
+.label .dataTable > .cell:nth-child(3) > .cellLabel,
+.label .dataTable > .cell:nth-child(4) > .cellLabel,
+.label .dataTable > .cell:nth-child(3) > .cellValue,
+.label .dataTable > .cell:nth-child(4) > .cellValue {
+    margin: 3 auto;
+    align-self: center;
+    width: 100%;
+    text-align: center;
+}
+
+.label .dataTable > .cell:nth-child(3) > .cellLabel,
+.label .dataTable > .cell:nth-child(4) > .cellLabel {
+    font-size: min(1.92cqw, 4.7cqh);
+}
+
+.label .dataTable > .cell:nth-child(3) > .cellLabel {
+    transform: translateY(1.65cqh);
 }
 
 /* Baixa DATA e sua numeração sem alterar a linha de validade. */
@@ -930,6 +991,50 @@ button.print {
         min(4.65cqw, 10.8cqh);
 
     line-height: 1;
+}
+
+/* O nome do operador pode ocupar até duas linhas, sem reticências. */
+.label .dataTable > .cell:nth-child(4) > .cellValue {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    text-overflow: clip;
+    line-height: 1.05;
+    max-height: 2.1em;
+}
+
+.label .dataTable .cell.big .qtyStack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    padding: .35cqh 0 0;
+    gap: .45cqh;
+    overflow: hidden;
+    transform: translateY(-1.05cqh);
+    line-height: 1;
+}
+
+.label .dataTable .qtyStack .qtyNumber {
+    display: block;
+    flex: 0 1 auto;
+    font-size: min(4.25cqw, 9.3cqh);
+    font-weight: 900;
+    line-height: .96;
+    letter-spacing: .005em;
+}
+
+.label .dataTable .qtyStack .qtyUnit {
+    display: block;
+    flex: 0 1 auto;
+    margin: 0;
+    font-size: min(2.55cqw, 5.8cqh);
+    font-weight: 900;
+    line-height: .95;
+    letter-spacing: .015em;
 }
 
 .label .dataTable .subRow {
@@ -957,6 +1062,7 @@ button.print {
 
 .label .dataTable .subRow .cellLabel {
     flex: 0 0 auto;
+    font-size: min(1.88cqw, 4.6cqh);
 }
 
 .label .dataTable .subRow .cellValue {
@@ -965,13 +1071,18 @@ button.print {
     min-width: 0;
 
     font-size:
-        min(2.55cqw, 6.1cqh);
+        min(2.75cqw, 6.5cqh);
 
     overflow: hidden;
 
     white-space: nowrap;
 
     text-overflow: ellipsis;
+}
+
+/* Somente o valor da data de fabricação precisa ser mais compacto. */
+.label .dataTable > .cell:nth-child(2) > .subRow:first-child .cellValue {
+    font-size: min(2.42cqw, 5.75cqh);
 }
 
 /* =========================================================
@@ -995,10 +1106,10 @@ button.print {
 .label .titleText,
 .label .titleText.productTitle,
 .label .titleText[data-out="descricao"] {
-    flex: 0 0 15.09cqh;
+    flex: 0 0 14.15cqh;
 
     width: 100%;
-    height: 15.09cqh;
+    height: 14.15cqh;
 
     min-width: 0;
 
@@ -1040,10 +1151,10 @@ button.print {
    ========================================================= */
 
 .label .codRow {
-    flex: 0 0 18.87cqh;
+    flex: 0 0 17.92cqh;
 
     width: 100%;
-    height: 18.87cqh;
+    height: 17.92cqh;
 
     min-width: 0;
 
@@ -1073,7 +1184,11 @@ button.print {
 
     display: flex;
 
-    align-items: center;
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: flex-start;
 
     gap: .7cqw;
 
@@ -1096,7 +1211,7 @@ button.print {
     flex: 0 0 auto;
 
     font-size:
-        min(3.35cqw, 7.2cqh);
+        min(2.50cqw, 5.5cqh);
 
     font-weight: 900;
 
@@ -1117,7 +1232,7 @@ button.print {
     text-overflow: clip;
 
     font-size:
-        min(6.25cqw, 13.2cqh);
+        min(4.86cqw, 10.4cqh);
 
     font-weight: 900;
 
@@ -1126,6 +1241,12 @@ button.print {
     letter-spacing: -.045em;
 
     max-height: none;
+
+    width: 100%;
+
+    flex: 0 0 auto;
+
+    margin-top: .5cqh;
 }
 
 /* ---------------------------------------------------------
@@ -1161,7 +1282,7 @@ button.print {
     flex: 0 0 auto;
 
     font-size:
-        min(3.1cqw, 6.8cqh);
+        min(2.50cqw, 5.5cqh);
 
     font-weight: 900;
 
@@ -1186,7 +1307,7 @@ button.print {
     text-overflow: clip;
 
     font-size:
-        min(6.0cqw, 12.8cqh);
+        min(4.86cqw, 10.4cqh);
 
     font-weight: 900;
 
@@ -2744,3 +2865,19 @@ tbody tr:hover { background: #f2faf8; }
     .previewCard .stage { min-height: 245px; padding: 8px; }
     .previewSpec { align-items: flex-start; flex-direction: column; gap: 2px; }
 }
+
+/* A prova deve preencher o designer, sem margem quadriculada ao redor. */
+.previewCard .stage {
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.previewCard .label {
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+    box-shadow: none;
+}
+
+

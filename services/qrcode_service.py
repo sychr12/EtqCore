@@ -22,7 +22,7 @@ def qr_payload(data: dict, identifier: str, branch: str = "04") -> str:
 
 def render_svg(text: str, size: int = 360) -> str:
     """Transforma o texto do QR em uma imagem vetorial nítida no navegador."""
-    widget = QrCodeWidget(text)
+    widget = QrCodeWidget(text, barBorder=0)
     bounds = widget.getBounds()
     drawing = Drawing(
         size,
