@@ -25,6 +25,7 @@ LABEL_LIMITS = {
     "fabricacao": 20,
     "validade": 20,
     "dpd": 160,
+    "observacao": 300,
 }
 
 REQUIRED_LABEL_FIELDS = {

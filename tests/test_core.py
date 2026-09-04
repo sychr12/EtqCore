@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from app import app
 from models import database
+from models import etiqueta as etiqueta_model
 from services.contador import counter_token
 from services.impressao import recommended_zebra
 from services import relatorio_excel
@@ -65,6 +66,10 @@ class ValidationTests(unittest.TestCase):
     def test_text_is_normalized_for_utf8_zpl(self) -> None:
         result = validate_label({**VALID_LABEL, "descricao": "AÇA\u0303O"})
         self.assertEqual(result["descricao"], "AÇÃO")
+
+    def test_observation_is_optional_and_normalized(self) -> None:
+        result = validate_label({**VALID_LABEL, "observacao": "  REVISÃO ÇÃ  "})
+        self.assertEqual(result["observacao"], "REVISÃO ÇÃ")
 
     def test_settings_reject_non_finite_dimensions(self) -> None:
         with self.assertRaises(ValueError):
@@ -140,6 +145,26 @@ class ApiTests(unittest.TestCase):
         )
         self.assertIn("^XA", zpl)
         self.assertIn("^XZ", zpl)
+        self.assertNotIn("^FDOBSERVAÇÃO:^FS", zpl)
+
+    def test_black_brand_band_only_exists_when_client_is_filled(self) -> None:
+        from services.qrcode_service import qr_payload
+        from services.zpl import make_zpl
+
+        settings = {
+            "largura_mm": "100", "comprimento_mm": "60", "dpi": "203",
+            "velocidade_ips": "3", "tonalidade": "10",
+            "deslocamento_x_mm": "0", "deslocamento_y_mm": "0",
+        }
+        without_client = validate_label({**VALID_LABEL, "cliente": ""})
+        zpl_without = make_zpl(without_client, 1, "TB0000000001", qr_payload(without_client, "TB0000000001"), settings)
+        self.assertNotIn("^FO700,28^GB72,424,72,B,0^FS", zpl_without)
+        self.assertIn("^FO28,232^GB744,4,4,B,0^FS", zpl_without)
+
+        with_client = validate_label({**VALID_LABEL, "cliente": "AMAZONTAPE"})
+        zpl_with = make_zpl(with_client, 1, "TB0000000001", qr_payload(with_client, "TB0000000001"), settings)
+        self.assertIn("^FO700,28^GB72,424,72,B,0^FS", zpl_with)
+        self.assertIn("^FDAMAZONTAPE^FS", zpl_with)
 
     def test_windows_folder_picker_returns_selected_path(self) -> None:
         selected = r"C:\Relatorios Compartilhados"
@@ -241,7 +266,9 @@ class ApiTests(unittest.TestCase):
                     "/api/gerar",
                     json={
                         **VALID_LABEL,
+                        "cliente": "AMAZONTAPE",
                         "descricao": "TUBETE AÇÃO ÇÃ",
+                        "observacao": "Separar para inspeção",
                         "destino": "download",
                         "quantidade_etiquetas": 2,
                     },
@@ -262,11 +289,16 @@ class ApiTests(unittest.TestCase):
                 self.assertIn("^BQN,2,4", payload["zpl"])
                 self.assertIn("TUBETE AÇÃO ÇÃ", payload["zpl"])
                 self.assertIn("^GFA", payload["zpl"])
-                # Coluna TIPO/LOTE: bloco preto, divisor branco e textos reversos.
-                self.assertIn("^FO232,28^GB88,204,88,B,0^FS", payload["zpl"])
-                self.assertIn("^FO232,130^GB88,2,2,W,0^FS", payload["zpl"])
-                self.assertIn("^FO232,61^FR^A0N,36,36^FB88,1,0,C,0^FDCAPA^FS", payload["zpl"])
-                self.assertIn("^FO232,154^FR^A0N,54,54^FB88,1,0,C,0^FDBC^FS", payload["zpl"])
+                # Tipo e lote de controle permanecem no QR, mas não são
+                # desenhados como textos/blocos visuais na etiqueta.
+                self.assertIn("(T)CAPA", payload["zpl"])
+                self.assertIn("(S)BC", payload["zpl"])
+                self.assertIn("(O)Separar para inspeção", payload["zpl"])
+                self.assertIn("^FDOBSERVAÇÃO:^FS", payload["zpl"])
+                self.assertIn("Separar para inspeção", payload["zpl"])
+                self.assertNotIn("^FO232,28^GB88,204,88,B,0^FS", payload["zpl"])
+                self.assertNotIn("^FDCAPA^FS", payload["zpl"])
+                self.assertNotIn("^FDBC^FS", payload["zpl"])
                 # Separadores das quatro faixas do novo layout com QR maior.
                 self.assertIn("^FO28,232^GB672,4,4,B,0^FS", payload["zpl"])
                 self.assertIn("^FO28,292^GB672,4,4,B,0^FS", payload["zpl"])
@@ -283,6 +315,151 @@ class ApiTests(unittest.TestCase):
                 database.DATA_DIR = old_data_dir
                 database.DB_PATH = old_db_path
                 database.BACKUP_DIR = old_backup_dir
+
+    def test_undo_latest_label_restores_counter_and_creates_backup(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "undo.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    con.execute(
+                        "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(1,'TB0000000001','2026-09-03T10:00:00','{}','QR','ZPL','download',1)"
+                    )
+                    con.execute("UPDATE config SET valor='2' WHERE chave='proximo_contador'")
+                    label_id = con.execute("SELECT id FROM etiquetas").fetchone()[0]
+                    con.commit()
+
+                response = self.client.post(f"/api/historico/{label_id}/desfazer")
+                self.assertEqual(response.status_code, 200)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 0)
+                    self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "1")
+                self.assertTrue(Path(response.get_json()["backup"]).exists())
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_undo_rejects_an_older_label(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db = database.DATA_DIR, database.DB_PATH
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "undo-guard.db"
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='3' WHERE chave='proximo_contador'")
+                    older_id = con.execute("SELECT id FROM etiquetas WHERE contador=1").fetchone()[0]
+                    con.commit()
+                response = self.client.post(f"/api/historico/{older_id}/desfazer")
+                self.assertEqual(response.status_code, 409)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 2)
+                    self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "3")
+            finally:
+                database.DATA_DIR, database.DB_PATH = old_data, old_db
+
+    def test_clear_history_creates_backup_deletes_rows_and_resets_counter(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "clear-history.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2, 3):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='4' WHERE chave='proximo_contador'")
+                    con.commit()
+
+                response = self.client.post("/api/historico/apagar-tudo")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["registros_apagados"], 3)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 0)
+                    self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "1")
+                self.assertTrue(Path(response.get_json()["backup"]).exists())
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_clear_history_range_sets_exact_next_counter_and_creates_backup(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "clear-range.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2, 3):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='4' WHERE chave='proximo_contador'")
+                    con.commit()
+
+                response = self.client.post(
+                    "/api/historico/apagar-intervalo",
+                    json={"inicio": 1, "fim": 3, "proximo": 89},
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["registros_apagados"], 3)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 0)
+                    self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "89")
+                self.assertTrue(Path(response.get_json()["backup"]).exists())
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_clear_history_range_rejects_counter_conflict(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db = database.DATA_DIR, database.DB_PATH
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "range-conflict.db"
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2, 3, 4):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.commit()
+                response = self.client.post(
+                    "/api/historico/apagar-intervalo",
+                    json={"inicio": 1, "fim": 3, "proximo": 2},
+                )
+                self.assertEqual(response.status_code, 400)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 4)
+            finally:
+                database.DATA_DIR, database.DB_PATH = old_data, old_db
 
 
 if __name__ == "__main__":

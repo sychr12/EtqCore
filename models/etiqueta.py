@@ -121,6 +121,106 @@ def obter_zpl(label_id: int) -> sqlite3.Row | None:
         ).fetchone()
 
 
+def validar_desfazer_ultima(label_id: int) -> dict:
+    """Confere se o registro é o último e se o contador pode voltar sem conflito."""
+    with closing(db()) as con:
+        row = con.execute(
+            "SELECT id, contador, identificador FROM etiquetas ORDER BY contador DESC LIMIT 1"
+        ).fetchone()
+        if not row or row["id"] != label_id:
+            raise ValueError("Somente a etiqueta mais recente pode ser desfeita.")
+        next_row = con.execute(
+            "SELECT valor FROM config WHERE chave='proximo_contador'"
+        ).fetchone()
+        if not next_row or int(next_row["valor"]) != int(row["contador"]) + 1:
+            raise ValueError("O contador já avançou e não pode voltar com segurança.")
+        return dict(row)
+
+
+def desfazer_ultima(label_id: int) -> dict:
+    """Apaga a última etiqueta e devolve seu número ao contador atomicamente."""
+    with closing(db()) as con:
+        con.execute("BEGIN IMMEDIATE")
+        row = con.execute(
+            "SELECT id, contador, identificador FROM etiquetas ORDER BY contador DESC LIMIT 1"
+        ).fetchone()
+        if not row or row["id"] != label_id:
+            con.rollback()
+            raise ValueError("Outra etiqueta foi criada. Atualize o histórico antes de desfazer.")
+        next_row = con.execute(
+            "SELECT valor FROM config WHERE chave='proximo_contador'"
+        ).fetchone()
+        if not next_row or int(next_row["valor"]) != int(row["contador"]) + 1:
+            con.rollback()
+            raise ValueError("O contador não pode voltar com segurança.")
+        con.execute("DELETE FROM etiquetas WHERE id=?", (label_id,))
+        con.execute(
+            "UPDATE config SET valor=? WHERE chave='proximo_contador'",
+            (str(row["contador"]),),
+        )
+        con.commit()
+        return dict(row)
+
+
+def apagar_todo_historico() -> int:
+    """Apaga todos os registros e reinicia o contador dentro de uma transação."""
+    with closing(db()) as con:
+        con.execute("BEGIN IMMEDIATE")
+        total = int(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0])
+        con.execute("DELETE FROM etiquetas")
+        con.execute(
+            "UPDATE config SET valor='1' WHERE chave='proximo_contador'"
+        )
+        con.commit()
+        return total
+
+
+def validar_exclusao_intervalo(inicio: int, fim: int, proximo: int) -> int:
+    """Valida o intervalo e impede que o novo contador alcance registros mantidos."""
+    if inicio < 1 or fim < inicio or proximo < 1:
+        raise ValueError("Informe um intervalo e um próximo número válidos.")
+    with closing(db()) as con:
+        total = int(con.execute(
+            "SELECT COUNT(*) FROM etiquetas WHERE contador BETWEEN ? AND ?",
+            (inicio, fim),
+        ).fetchone()[0])
+        if total == 0:
+            raise ValueError("Nenhuma etiqueta foi encontrada nesse intervalo.")
+        maximo_mantido = con.execute(
+            "SELECT MAX(contador) FROM etiquetas WHERE contador NOT BETWEEN ? AND ?",
+            (inicio, fim),
+        ).fetchone()[0]
+        if maximo_mantido is not None and proximo <= int(maximo_mantido):
+            raise ValueError(
+                f"O próximo número deve ser maior que {maximo_mantido}, pois existem etiquetas mantidas até esse número."
+            )
+        return total
+
+
+def apagar_intervalo(inicio: int, fim: int, proximo: int) -> int:
+    """Apaga um intervalo inclusivo e define o próximo contador atomicamente."""
+    with closing(db()) as con:
+        con.execute("BEGIN IMMEDIATE")
+        total = int(con.execute(
+            "SELECT COUNT(*) FROM etiquetas WHERE contador BETWEEN ? AND ?",
+            (inicio, fim),
+        ).fetchone()[0])
+        maximo_mantido = con.execute(
+            "SELECT MAX(contador) FROM etiquetas WHERE contador NOT BETWEEN ? AND ?",
+            (inicio, fim),
+        ).fetchone()[0]
+        if total == 0:
+            con.rollback()
+            raise ValueError("Nenhuma etiqueta foi encontrada nesse intervalo.")
+        if maximo_mantido is not None and proximo <= int(maximo_mantido):
+            con.rollback()
+            raise ValueError("O próximo número entraria em conflito com etiquetas mantidas.")
+        con.execute("DELETE FROM etiquetas WHERE contador BETWEEN ? AND ?", (inicio, fim))
+        con.execute("UPDATE config SET valor=? WHERE chave='proximo_contador'", (str(proximo),))
+        con.commit()
+        return total
+
+
 def gerar_backup() -> Path:
     """Copia o banco em uso para a pasta de backups sem corrompê-lo."""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)

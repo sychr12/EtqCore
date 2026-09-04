@@ -17,6 +17,7 @@ def qr_payload(data: dict, identifier: str, branch: str = "04") -> str:
         f"(D){clean(data.get('descricao'))}(S){clean(data.get('lote_controle'))}"
         f"(Q){quantity_x1000(data.get('quantidade'))}(Y){clean(data.get('dpd'))}"
         f"(I){identifier}(U){clean(data.get('unidade'))}(L){clean(data.get('lote_base'))}"
+        f"(O){clean(data.get('observacao'))}"
     )
 
 

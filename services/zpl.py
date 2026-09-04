@@ -13,8 +13,8 @@ from .texto import dots, zpl_text, display_date, display_month_year
 # Este arquivo desenha a etiqueta em ZPL reproduzindo, com comandos gráficos
 # (^GB para linhas/caixas, ^FO/^FD/^FB para texto), o mesmo layout mostrado
 # na pré-visualização web (index.html/style.css): moldura preta, QR à
-# esquerda, coluna preta com TIPO/LOTE, tabela 2x2 com LOTE DE FABRICAÇÃO,
-# DATA/VAL, QUANTIDADE e OPERADOR, título com a descrição, linha com COD /
+# esquerda, tabela 2x2 com LOTE DE FABRICAÇÃO, DATA/VAL, QUANTIDADE e
+# OPERADOR, título com a descrição, linha com COD /
 # COD PROD, linha com MEDIDAS + logo, e a faixa preta vertical com o nome
 # do cliente na lateral direita.
 # ---------------------------------------------------------------------------
@@ -283,8 +283,9 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     fx1, fy1 = W - outer_x, H - outer_y
     fw, fh = fx1 - fx0, fy1 - fy0
 
-    # Faixa preta lateral com o nome do cliente (.brandBand: 9cqw)
-    brand_w = mmw(0.09)
+    # A faixa preta lateral só ocupa espaço quando Marca/Cliente foi informado.
+    cliente = zpl_text(data.get("cliente") or "")
+    brand_w = mmw(0.09) if cliente else 0
     cx0, cy0 = fx0 + border, fy0 + border
     cx1 = fx1 - border - brand_w
     cy1 = fy1 - border
@@ -324,24 +325,22 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     z.box_border(fx0, fy0, fw, fh, border)
 
     # Faixa preta lateral (cliente/marca), texto girado lendo de cima para baixo
-    z.box_filled(brand_x0, cy0, brand_w, ch)
-    cliente = zpl_text(data.get("cliente") or "")
     if cliente:
+        z.box_filled(brand_x0, cy0, brand_w, ch)
         brand_font = _fit_font(cliente, ch, brand_w - 4, max_font=min(mmw(0.05), brand_w - 4), min_font=14)
         text_len = len(cliente) * brand_font * 0.62
         by = cy0 + max(0, int((ch - text_len) / 2))
         bx = brand_x0 + max(0, int((brand_w - brand_font) / 2))
         z.raw(f"^FO{bx},{by}^FR^A0R,{brand_font},{brand_font}^FD{cliente}^FS")
 
-    # --- Linha superior: QR + coluna preta (TIPO/LOTE) + tabela 2x2 -----------------
+    # --- Linha superior: QR + tabela 2x2 --------------------------------------------
+    # Tipo e lote de controle pertencem somente ao conteúdo do QR Code.
     qr_w = min(top_h, int(cw * 0.4))
-    badge_w = mmw(0.11)
-    table_x0 = cx0 + qr_w + badge_w
-    table_w = cw - qr_w - badge_w
+    table_x0 = cx0 + qr_w
+    table_w = cw - qr_w
 
     # QR code nativo da Zebra, centralizado dentro do quadrado qr_w x top_h,
-    # com folga (pad) em todos os lados para nunca encostar/invadir a coluna
-    # preta ao lado nem a moldura acima.
+    # com folga (pad) em todos os lados para não encostar na tabela ou na moldura.
     qr_widget = QrCodeWidget(qr)
     # O ReportLab só calcula a quantidade real de módulos ao preparar os
     # limites. Sem isto, moduleCount fica zero e gera ampliação inválida.
@@ -354,18 +353,6 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     qr_x = cx0 + max(0, (qr_w - qr_size) // 2)
     qr_y = cy0 + max(0, (top_h - qr_size) // 2)
     z.raw(f"^FO{qr_x},{qr_y}^BQN,2,{qr_mag}^FDLA,{qr}^FS")
-
-    # Coluna preta com TIPO em cima e lote embaixo, ambos em branco.
-    badge_x0 = cx0 + qr_w
-    half = top_h // 2
-    badge_line = max(2, mmw(0.0028))
-    z.box_filled(badge_x0, cy0, badge_w, top_h)
-    z.line_h(badge_x0, cy0 + half, badge_w, badge_line, color="W")
-    tipo = str(data.get("tipo") or "")
-    lote_controle = str(data.get("lote_controle") or "")
-    z.text(badge_x0, cy0, badge_w, half, tipo, max_font=min(half, mmw(0.06)), min_font=18, align="C", reverse=True)
-    z.text(badge_x0 + 0, cy0 + half, badge_w, top_h - half, lote_controle,
-           max_font=min(top_h - half, mmw(0.068)), min_font=18, align="C", reverse=True)
 
     # Tabela 2x2: LOTE DE FABRICAÇÃO | DATA/VAL // QUANTIDADE | OPERADOR
     col_w = table_w // 2
@@ -437,13 +424,22 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
                label_font=18, value_font=44, value_offset=pad // 2)
     z.line_h(cx0, cod_y + cod_h, cw, border)
 
-    # --- Linha inferior: MEDIDAS + logo -----------------------------------------------
+    # --- Linha inferior: MEDIDAS/OBSERVAÇÃO + logo -----------------------------------
     bottom_y = cod_y + cod_h
     logo_w = int(cw * 0.44)
     medidas_w = cw - logo_w
-    _inline_pair(z, cx0 + pad, bottom_y, medidas_w - 2 * pad, bottom_h,
+    observacao = str(data.get("observacao") or "").strip()
+    medidas_h = round(bottom_h * 0.55) if observacao else bottom_h
+    _inline_pair(z, cx0 + pad, bottom_y, medidas_w - 2 * pad, medidas_h,
                  "MEDIDAS: ", str(data.get("medidas") or ""), label_ratio=0.30,
-                 value_font=44, label_font=24)
+                 value_font=32 if observacao else 44, label_font=18 if observacao else 24)
+    if observacao:
+        obs_y = bottom_y + medidas_h
+        obs_h = bottom_h - medidas_h
+        z.line_h(cx0, obs_y, medidas_w, max(2, mmw(0.0028)))
+        _stat_cell(z, cx0, obs_y, medidas_w, obs_h, pad,
+                   "OBSERVAÇÃO:", observacao,
+                   label_font=13, value_font=15, wrap_value=True)
     z.line_v(cx0 + medidas_w, bottom_y, bottom_h, border)
 
     logo_x0 = cx0 + medidas_w

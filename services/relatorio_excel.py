@@ -76,7 +76,7 @@ def escolher_pasta_windows(pasta_inicial: str | Path | None = None) -> str | Non
 HEADERS = [
     "ID", "Contador", "Identificador", "Data e hora", "Tipo", "Produto",
     "Código interno", "Descrição", "Lote controle", "Lote fabricação",
-    "Quantidade", "Unidade", "Operador", "Medidas", "Destino", "Status", "Erro",
+    "Quantidade", "Unidade", "Operador", "Medidas", "Destino", "Status", "Erro", "Observação",
 ]
 
 
@@ -84,7 +84,7 @@ def _preencher_planilha(sheet, titulo: str, etiquetas: list[dict]) -> None:
     """Aplica o mesmo padrão visual e os mesmos campos em qualquer aba."""
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "A7"
-    sheet.merge_cells("A1:Q1")
+    sheet.merge_cells("A1:R1")
     sheet["A1"] = titulo
     sheet["A1"].font = Font(name="Aptos Display", size=18, bold=True, color="FFFFFF")
     sheet["A1"].fill = PatternFill("solid", fgColor="0B6B5C")
@@ -125,16 +125,16 @@ def _preencher_planilha(sheet, titulo: str, etiquetas: list[dict]) -> None:
             dados.get("descricao", ""), dados.get("lote_controle", ""), dados.get("lote_base", ""),
             dados.get("quantidade", ""), dados.get("unidade", ""), dados.get("operador", ""),
             dados.get("medidas", ""), item["destino"], "Sucesso" if item["sucesso"] else "Falha",
-            item["erro"] or "",
+            item["erro"] or "", dados.get("observacao", ""),
         ])
 
     final_row = max(header_row, sheet.max_row)
-    sheet.auto_filter.ref = f"A{header_row}:Q{final_row}"
+    sheet.auto_filter.ref = f"A{header_row}:R{final_row}"
     thin = Side(style="thin", color="D9E2E8")
     for row in sheet.iter_rows(min_row=header_row + 1, max_row=final_row):
         for cell in row:
             cell.border = Border(bottom=thin)
-            cell.alignment = Alignment(vertical="top", wrap_text=cell.column in {8, 17})
+            cell.alignment = Alignment(vertical="top", wrap_text=cell.column in {8, 17, 18})
         if row[0].row % 2 == 0:
             for cell in row:
                 cell.fill = PatternFill("solid", fgColor="F2F7F6")
@@ -143,7 +143,7 @@ def _preencher_planilha(sheet, titulo: str, etiquetas: list[dict]) -> None:
         status_cell = sheet.cell(row=row, column=16)
         status_cell.font = Font(bold=True, color="08735B" if status_cell.value == "Sucesso" else "B42318")
 
-    widths = [8, 12, 18, 20, 12, 18, 18, 34, 16, 18, 14, 11, 14, 24, 13, 12, 38]
+    widths = [8, 12, 18, 20, 12, 18, 18, 34, 16, 18, 14, 11, 14, 24, 13, 12, 38, 42]
     for index, width in enumerate(widths, 1):
         sheet.column_dimensions[get_column_letter(index)].width = width
 

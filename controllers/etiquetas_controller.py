@@ -268,6 +268,66 @@ def history():
     return jsonify(etiqueta_model.listar_historico())
 
 
+@api_bp.post("/historico/<int:label_id>/desfazer")
+def undo_last_history(label_id: int):
+    """Remove somente a última etiqueta e restaura seu número no contador."""
+    try:
+        etiqueta_model.validar_desfazer_ultima(label_id)
+        backup = etiqueta_model.gerar_backup()
+        removida = etiqueta_model.desfazer_ultima(label_id)
+        return jsonify({
+            "ok": True,
+            "identificador": removida["identificador"],
+            "proximo_contador": removida["contador"],
+            "backup": str(backup),
+        })
+    except ValueError as exc:
+        return jsonify({"erro": str(exc)}), 409
+    except (OSError, sqlite3.Error):
+        return jsonify({"erro": "Não foi possível desfazer a etiqueta com segurança."}), 500
+
+
+@api_bp.post("/historico/apagar-tudo")
+def clear_history():
+    """Cria um backup, apaga o histórico completo e reinicia o contador."""
+    try:
+        backup = etiqueta_model.gerar_backup()
+        total = etiqueta_model.apagar_todo_historico()
+        return jsonify({
+            "ok": True,
+            "registros_apagados": total,
+            "proximo_contador": 1,
+            "backup": str(backup),
+        })
+    except (OSError, sqlite3.Error):
+        return jsonify({"erro": "Não foi possível apagar o histórico com segurança."}), 500
+
+
+@api_bp.post("/historico/apagar-intervalo")
+def clear_history_range():
+    """Apaga contadores dentro de um intervalo e posiciona o contador exatamente."""
+    try:
+        data = request.get_json(silent=True) or {}
+        inicio = int(data.get("inicio"))
+        fim = int(data.get("fim"))
+        proximo = int(data.get("proximo"))
+        etiqueta_model.validar_exclusao_intervalo(inicio, fim, proximo)
+        backup = etiqueta_model.gerar_backup()
+        total = etiqueta_model.apagar_intervalo(inicio, fim, proximo)
+        return jsonify({
+            "ok": True,
+            "registros_apagados": total,
+            "inicio": inicio,
+            "fim": fim,
+            "proximo_contador": proximo,
+            "backup": str(backup),
+        })
+    except (TypeError, ValueError) as exc:
+        return jsonify({"erro": str(exc) or "Preencha todos os números."}), 400
+    except (OSError, sqlite3.Error):
+        return jsonify({"erro": "Não foi possível apagar o intervalo com segurança."}), 500
+
+
 @api_bp.get("/etiqueta/<int:label_id>.zpl")
 @api_bp.get("/etiqueta/<int:label_id>.prn")
 def get_print_file(label_id: int):

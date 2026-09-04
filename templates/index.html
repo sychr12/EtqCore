@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=62" />
+    <link rel="stylesheet" href="/static/style.css?v=74" />
   </head>
 
   <body>
@@ -37,6 +37,10 @@
         Histórico
       </button>
 
+      <button data-tab="reports">
+        Relatórios
+      </button>
+
       <button data-tab="settings">
         Configurações
       </button>
@@ -65,11 +69,15 @@
                FORMULÁRIO
           ======================================================= -->
           <div class="card editorCard">
-            <h2 class="cardTitle">
-              Informações da etiqueta
-            </h2>
+            <div class="editorCardHeader">
+              <div><span>DADOS DE PRODUÇÃO</span><h2 class="cardTitle">Informações da etiqueta</h2><p>Preencha os campos e acompanhe o resultado na prova ao lado.</p></div>
+              <strong>Campos com * são obrigatórios</strong>
+            </div>
 
             <form id="labelForm" class="fields">
+              <section class="editorFormSection">
+                <div class="editorSectionHeading"><span>01</span><div><h3>Produto e identificação</h3><p>Informações principais exibidas na etiqueta.</p></div></div>
+                <div class="editorSectionFields">
               <div>
                 <label>Marca / Cliente (faixa preta)</label>
                 <input name="cliente" value="AMAZONTAPE" />
@@ -111,6 +119,12 @@
                   required
                 >TUBETE ADELBRAS 711</textarea>
               </div>
+                </div>
+              </section>
+
+              <section class="editorFormSection">
+                <div class="editorSectionHeading"><span>02</span><div><h3>Produção e lote</h3><p>Rastreabilidade, quantidade e medidas do material.</p></div></div>
+                <div class="editorSectionFields">
 
               <div>
                 <label>Lote de controle / selo (S) *</label>
@@ -164,6 +178,12 @@
                   placeholder="76,5 x 2,5 x 18mm"
                 />
               </div>
+                </div>
+              </section>
+
+              <section class="editorFormSection">
+                <div class="editorSectionHeading"><span>03</span><div><h3>Datas e informações adicionais</h3><p>Campos visuais e informações complementares do QR.</p></div></div>
+                <div class="editorSectionFields">
 
               <div>
                 <label>Fabricação / Data (visual)</label>
@@ -187,8 +207,21 @@
                 <label>DPD (Y) — só no QR</label>
                 <input name="dpd" />
               </div>
+
+              <div class="span2">
+                <label>Observação (opcional) — aparece na etiqueta</label>
+                <textarea
+                  name="observacao"
+                  maxlength="300"
+                  placeholder="Digite uma informação complementar, se necessário"
+                ></textarea>
+              </div>
+                </div>
+              </section>
             </form>
 
+            <div class="editorFinishPanel">
+            <div class="editorActionsHeading"><span>FINALIZAÇÃO</span><h3>Salvar, conferir ou imprimir</h3><p>Escolha uma ação para concluir a etiqueta.</p></div>
             <div class="actions projectActions">
               <button class="primary" id="saveProject">
                 Salvar etiqueta editável (.etq)
@@ -240,15 +273,14 @@
             </div>
 
             <div id="status" class="status"></div>
+            </div>
           </div>
 
           <!-- ======================================================
                PRÉ-VISUALIZAÇÃO
           ======================================================= -->
           <div class="card previewCard">
-            <h2 class="cardTitle">
-              Prova de impressão
-            </h2>
+            <div class="previewCardHeading"><div><span>VISUALIZAÇÃO EM TEMPO REAL</span><h2 class="cardTitle">Prova de impressão</h2></div><small>Não consome numeração</small></div>
 
             <div class="previewToolbar">
               <div class="previewSpec">
@@ -267,22 +299,6 @@
                   <!-- ==================== TOPO ==================== -->
                   <div class="topRow" id="topRow">
                     <div class="qr empty" id="qrBox"></div>
-
-                    <div class="badgeStack">
-                      <div class="badge2" id="tipoBadge">
-                        <span
-                          class="badgeValue"
-                          data-out="tipo"
-                        ></span>
-                      </div>
-
-                      <div class="badge2" id="selBadge">
-                        <span
-                          class="badgeValue"
-                          data-out="lote_controle"
-                        ></span>
-                      </div>
-                    </div>
 
                     <div class="dataTable" id="dataTable">
                       <div class="cell">
@@ -364,6 +380,7 @@
 
                   <!-- ==================== MEDIDAS + LOGO ==================== -->
                   <div class="bottomRow">
+                    <div class="detailsStack">
                     <div class="medidas">
                       <svg
                         class="medIcon"
@@ -409,6 +426,12 @@
                       </div>
                     </div>
 
+                    <div class="observationBox isEmpty">
+                      <span class="observationLabel">OBSERVAÇÃO:</span>
+                      <span class="observationValue" data-out="observacao"></span>
+                    </div>
+                    </div>
+
                     <!-- LOGO DA ETIQUETA -->
                     <div class="logoBox">
                       <img
@@ -452,12 +475,14 @@
           </div>
         </div>
 
-        <div class="card">
-          <h2 class="cardTitle">
-            Etiquetas registradas
-          </h2>
-
-          <div class="actions">
+        <div class="card historyCard">
+          <div class="historyToolbar">
+            <div>
+              <span class="historySectionLabel">REGISTROS DE PRODUÇÃO</span>
+              <h2 class="cardTitle">Etiquetas registradas</h2>
+              <p>Acompanhe as emissões e acesse rapidamente cada ação.</p>
+            </div>
+            <div class="actions">
             <button id="refreshHistory">
               Atualizar
             </button>
@@ -468,8 +493,17 @@
             >
               Baixar backup do contador
             </a>
+            </div>
           </div>
 
+          <div class="historyStats" aria-live="polite">
+            <div><span>Total registrado</span><strong id="historyTotal">—</strong></div>
+            <div><span>Impressões concluídas</span><strong id="historySuccess">—</strong></div>
+            <div><span>Falhas registradas</span><strong id="historyFailures">—</strong></div>
+            <div><span>Última etiqueta</span><strong id="historyLatest">—</strong></div>
+          </div>
+
+          <div class="historyToolsGrid">
           <div class="monthlyReportPanel">
             <div class="monthlyReportHeading">
               <span class="reportIcon">XLSX</span>
@@ -521,6 +555,54 @@
             </div>
           </div>
 
+          <div class="historyMaintenancePanel">
+            <div class="maintenanceHeading">
+              <div>
+                <span>MANUTENÇÃO DOS REGISTROS</span>
+                <h3>Correção e exclusão</h3>
+                <p>Ferramentas protegidas para corrigir falhas na sequência.</p>
+              </div>
+              <button class="dangerButton" id="clearHistory" type="button">Apagar tudo</button>
+            </div>
+
+          <div class="historyCorrectionHelp">
+            <div>
+              <strong>Correção da última etiqueta</strong>
+              <span>Se a última etiqueta saiu errada ou a numeração pulou, use o botão na coluna “Corrigir numeração”. O registro será apagado e o número ficará disponível novamente.</span>
+            </div>
+            <small>Por segurança, somente a etiqueta mais recente pode ser corrigida.</small>
+          </div>
+
+          <div class="rangeDeletePanel">
+            <div class="rangeDeleteHeading">
+              <div>
+                <span>EXCLUSÃO POR INTERVALO</span>
+                <h3>Apagar etiquetas específicas</h3>
+                <p>Informe os contadores inicial e final. Depois escolha exatamente qual será o próximo número.</p>
+              </div>
+            </div>
+            <div class="rangeDeleteFields">
+              <label>Número inicial<input id="deleteRangeStart" type="number" min="1" step="1" placeholder="1" /></label>
+              <label>Número final<input id="deleteRangeEnd" type="number" min="1" step="1" placeholder="88" /></label>
+              <label>Próximo número exato<input id="deleteRangeNext" type="number" min="1" step="1" placeholder="89" /></label>
+              <button class="dangerButton" id="deleteHistoryRange" type="button">Revisar exclusão</button>
+            </div>
+            <small>O próximo número não pode repetir uma etiqueta que permaneceu no histórico.</small>
+          </div>
+          </div>
+          </div>
+
+          <div class="historyTableHeading">
+            <div>
+              <span>DETALHAMENTO</span>
+              <h3>Lista de etiquetas</h3>
+            </div>
+            <div class="historyTableMeta">
+              <small>As etiquetas mais recentes aparecem primeiro.</small>
+              <button id="refreshHistoryBottom" type="button">Atualizar lista</button>
+            </div>
+          </div>
+
           <div class="tableWrap">
             <table>
               <thead>
@@ -530,15 +612,37 @@
                   <th>Produto</th>
                   <th>Lote</th>
                   <th>Destino</th>
+                  <th>Observação</th>
                   <th>Status</th>
                   <th>Reutilizar dados</th>
                   <th>Arquivo da impressora</th>
+                  <th>Corrigir numeração</th>
                 </tr>
               </thead>
 
               <tbody id="historyRows"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           RELATÓRIOS EM EXCEL
+      =========================================================== -->
+      <section id="reports" class="tab">
+        <div class="sectionIntro">
+          <div>
+            <span class="eyebrow">Relatórios</span>
+            <h2>Planilhas de etiquetas</h2>
+            <p>Consulte períodos, gere arquivos Excel e escolha onde salvar.</p>
+          </div>
+        </div>
+        <div class="reportsPageCard">
+          <div class="reportsPageHeader">
+            <div><span>CENTRAL DE DADOS</span><h2>Relatórios em Excel</h2><p>Organização automática por ano e mês.</p></div>
+            <strong>XLSX</strong>
+          </div>
+          <div id="reportsMount"></div>
         </div>
       </section>
 
@@ -556,140 +660,65 @@
           </div>
         </div>
 
-        <div class="card settings">
-          <h2 class="cardTitle">
-            Etiqueta e impressora
-          </h2>
-
-          <form id="settingsForm" class="fields">
+        <div class="card settings settingsCard">
+          <div class="settingsHeader">
             <div>
-              <label>Filial (E)</label>
-              <input
-                name="filial"
-                maxlength="10"
-                placeholder="Ex.: 04"
-                required
-              />
+              <span>CONFIGURAÇÃO DO SISTEMA</span>
+              <h2 class="cardTitle">Etiqueta e impressora</h2>
+              <p>Organize a identificação, a Zebra ZD220 e o local dos relatórios.</p>
             </div>
+            <div class="settingsPrinterBadge"><small>PERFIL DE IMPRESSÃO</small><strong>ZD220 · 203 dpi</strong></div>
+          </div>
 
-            <div>
-              <label>Prefixo do contador (I)</label>
-              <input
-                name="prefixo_contador"
-                maxlength="8"
-              />
-            </div>
+          <form id="settingsForm" class="settingsGrid">
+            <section class="settingsPanel identityPanel">
+              <div class="settingsPanelHeading"><span>01</span><div><h3>Identificação</h3><p>Dados usados no contador e no QR Code.</p></div></div>
+              <div class="settingsFields twoColumns">
+                <div><label>Filial (E)</label><input name="filial" maxlength="10" placeholder="Ex.: 04" required /></div>
+                <div><label>Prefixo do contador (I)</label><input name="prefixo_contador" maxlength="8" /></div>
+              </div>
+              <small class="panelHint">A filial será gravada no campo (E) dos próximos QR Codes.</small>
+            </section>
 
-            <div>
-              <label>Largura (mm)</label>
-              <input
-                name="largura_mm"
-                type="number"
-                min="20"
-                max="300"
-                step="0.1"
-              />
-            </div>
+            <section class="settingsPanel printerPanel">
+              <div class="settingsPanelHeading"><span>02</span><div><h3>Zebra ZD220</h3><p>Dimensões físicas e impressora instalada.</p></div></div>
+              <div class="settingsFields threeColumns">
+                <div><label>Largura (mm)</label><input name="largura_mm" type="number" min="20" max="300" step="0.1" /></div>
+                <div><label>Altura (mm)</label><input name="comprimento_mm" type="number" min="20" max="300" step="0.1" /></div>
+                <div><label>Resolução</label><select name="dpi"><option>203</option></select></div>
+                <div class="fullField"><label>Nome exato da impressora no Windows</label><input name="impressora" placeholder="Ex.: ZDesigner ZD220-203dpi ZPL" list="printerOptions" /><datalist id="printerOptions"></datalist></div>
+              </div>
+              <button class="panelButton" id="findPrinters" type="button">Procurar impressoras no Windows</button>
+            </section>
 
-            <div>
-              <label>Comprimento/altura (mm)</label>
-              <input
-                name="comprimento_mm"
-                type="number"
-                min="20"
-                max="300"
-                step="0.1"
-              />
-            </div>
+            <section class="settingsPanel reportsPanel">
+              <div class="settingsPanelHeading"><span>03</span><div><h3>Relatórios em Excel</h3><p>Escolha uma pasta local ou compartilhada na rede.</p></div></div>
+              <div class="settingsFields">
+                <div class="reportFolderSetting"><label>Pasta externa dos relatórios</label><input name="pasta_relatorios" maxlength="500" placeholder="Ex.: C:\Relatorios ou \\SERVIDOR\Etiquetas" required /></div>
+              </div>
+              <div class="panelActions">
+                <button class="folderPickerButton" id="chooseReportsFolder" type="button">Escolher pasta no Windows...</button>
+                <button id="testReportsFolder" type="button">Testar pasta</button>
+              </div>
+              <small class="panelHint">A pasta precisa ter permissão de gravação para esta máquina.</small>
+            </section>
 
-            <div>
-              <label>Resolução da Zebra</label>
-              <select name="dpi">
-                <option>203</option>
-              </select>
-            </div>
-
-            <div>
-              <label>
-                Nome exato da impressora no Windows
-              </label>
-              <input
-                name="impressora"
-                placeholder="Ex.: ZDesigner ZD220-203dpi ZPL"
-                list="printerOptions"
-              />
-              <datalist id="printerOptions"></datalist>
-            </div>
-
-            <div class="span2 reportFolderSetting">
-              <label>Pasta externa dos relatórios Excel</label>
-              <input
-                name="pasta_relatorios"
-                maxlength="500"
-                placeholder="Ex.: C:\Relatorios Etiquetas ou \\SERVIDOR\Etiquetas"
-                required
-              />
-              <button class="folderPickerButton" id="chooseReportsFolder" type="button">
-                Escolher pasta no Windows...
-              </button>
-              <small>
-                Para outra máquina acessar, informe uma pasta compartilhada da rede
-                ou uma unidade mapeada com permissão de gravação.
-              </small>
-            </div>
-
-            <div>
-              <label>Velocidade de impressão</label>
-              <select name="velocidade_ips">
-                <option value="2">2 ips — máxima qualidade</option>
-                <option value="3">3 ips — recomendado</option>
-                <option value="4">4 ips — mais rápido</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Tonalidade (0–30)</label>
-              <input name="tonalidade" type="number" min="0" max="30" step="1" />
-            </div>
-
-            <div>
-              <label>Correção horizontal (mm)</label>
-              <input name="deslocamento_x_mm" type="number" min="-10" max="10" step="0.1" />
-            </div>
-
-            <div>
-              <label>Correção vertical (mm)</label>
-              <input name="deslocamento_y_mm" type="number" min="-10" max="10" step="0.1" />
-            </div>
+            <section class="settingsPanel calibrationPanel">
+              <div class="settingsPanelHeading"><span>04</span><div><h3>Qualidade e alinhamento</h3><p>Ajustes finos aplicados na impressão.</p></div></div>
+              <div class="settingsFields twoColumns">
+                <div><label>Velocidade</label><select name="velocidade_ips"><option value="2">2 ips — máxima qualidade</option><option value="3">3 ips — recomendado</option><option value="4">4 ips — mais rápido</option></select></div>
+                <div><label>Tonalidade (0–30)</label><input name="tonalidade" type="number" min="0" max="30" step="1" /></div>
+                <div><label>Correção horizontal (mm)</label><input name="deslocamento_x_mm" type="number" min="-10" max="10" step="0.1" /></div>
+                <div><label>Correção vertical (mm)</label><input name="deslocamento_y_mm" type="number" min="-10" max="10" step="0.1" /></div>
+              </div>
+            </section>
           </form>
 
-          <div class="actions">
-            <button id="findPrinters">
-              Procurar impressoras no Windows
-            </button>
-
-            <button id="testReportsFolder" type="button">
-              Testar pasta dos relatórios
-            </button>
-            <button
-              class="primary"
-              id="saveSettings"
-            >
-              Salvar configurações
-            </button>
+          <div class="settingsFooter">
+            <div><strong>Proteção dos dados</strong><span>Guarde backups da pasta dados para preservar o histórico e a sequência.</span></div>
+            <button class="primary" id="saveSettings">Salvar configurações</button>
           </div>
-
-          <div class="note">
-            A filial informada será gravada no campo
-            <strong>(E)</strong> de todos os próximos QR Codes.
-            Guarde backups da pasta <strong>dados</strong>;
-            ela protege a continuidade do contador.
-          </div>
-
-          <div
-            id="settingsStatus"
-            class="status"
-          ></div>
+          <div id="settingsStatus" class="status settingsStatus"></div>
         </div>
       </section>
     </main>
@@ -788,7 +817,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=20"
+      src="/static/app.js?v=27"
       defer
     ></script>
   </body>
