@@ -18,16 +18,16 @@ const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'O
 const fmtDate = v => v ? v.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1') : '';
 const fmtMesAno = v => { if (!v) return ''; const m = v.match(/(\d{4})-(\d{2})-(\d{2})/); if (!m) return v; return MESES[Number(m[2]) - 1] + '/' + m[1] };
 const setText = (selector, value) => { const el = document.querySelector(selector); if (el) el.textContent = value ?? ''; return el };
-async function loadState(restoreLast = false) { const r = await fetch('/api/estado'), s = await r.json(); cfg = s.config; document.querySelector('#nextTop').textContent = 'Próximo: ' + s.proximo_numero; document.querySelector('#branchChip').textContent = 'Filial ' + cfg.filial; for (const [k, v] of Object.entries(cfg)) { const el = document.querySelector(`#settingsForm [name="${k}"]`); if (el) el.value = v } if (restoreLast && s.ultima_etiqueta) { fillForm(s.ultima_etiqueta.dados, false); status(`Última etiqueta ${s.ultima_etiqueta.identificador} restaurada automaticamente.`, 'info') } resizePreview(); return s }
+async function loadState(restoreLast = false) { const r = await fetch('/api/estado'), s = await r.json(); cfg = s.config; updateDeleteQuantity(); document.querySelector('#nextTop').textContent = 'Próximo: ' + s.proximo_numero; document.querySelector('#branchChip').textContent = 'Filial ' + cfg.filial; for (const [k, v] of Object.entries(cfg)) { const el = document.querySelector(`#settingsForm [name="${k}"]`); if (el) el.value = v } if (restoreLast && s.ultima_etiqueta) { fillForm(s.ultima_etiqueta.dados, false); status(`Última etiqueta ${s.ultima_etiqueta.identificador} restaurada automaticamente.`, 'info') } resizePreview(); return s }
 async function findPrinters(showResult = true) { const out = document.querySelector('#settingsStatus'), input = document.querySelector('#settingsForm [name="impressora"]'), options = document.querySelector('#printerOptions'); try { const response = await fetch('/api/impressoras'); if (!response.ok) throw new Error('Falha ao consultar as impressoras do Windows.'); const data = await response.json(); options.replaceChildren(...data.impressoras.map(name => Object.assign(document.createElement('option'), { value: name }))); if (data.recomendada && (!input.value || !data.impressoras.some(name => name.toLowerCase() === input.value.toLowerCase()))) input.value = data.recomendada; if (showResult) { const message = data.recomendada ? `Zebra encontrada: ${data.recomendada}. Clique em Salvar configurações.` : data.impressoras.length ? 'Impressoras encontradas, mas nenhuma Zebra ZD220 foi identificada.' : 'Nenhuma impressora instalada foi encontrada. Instale o driver ZDesigner da ZD220.'; out.textContent = message; out.className = 'status ' + (data.recomendada ? 'ok' : 'error'); showToast(message, data.recomendada ? 'ok' : 'error') } } catch (error) { out.textContent = error.message; out.className = 'status error'; if (showResult) showToast(error.message, 'error') } }
-function fitText(el, maxWidthPx, minFontPx = 7) { if (!el || !maxWidthPx) return; el.style.fontSize = ''; const style = getComputedStyle(el), canvas = fitText.canvas || (fitText.canvas = document.createElement('canvas')), context = canvas.getContext('2d'); let fs = parseFloat(style.fontSize); const text = (el.textContent || '').trim(); if (!text || !context) return; const measure = size => { context.font = `${style.fontStyle} ${style.fontWeight} ${size}px ${style.fontFamily}`; return context.measureText(text).width + Math.max(0, text.length - 1) * (parseFloat(style.letterSpacing) || 0) }; const width = measure(fs); if (width > maxWidthPx) { fs = Math.max(minFontPx, Math.floor(fs * maxWidthPx / width)); el.style.fontSize = fs + 'px' } }
+function fitText(el, maxWidthPx, minFontPx = 7) { if (!el || !maxWidthPx) return; el.style.fontSize = ''; const style = getComputedStyle(el), canvas = fitText.canvas || (fitText.canvas = document.createElement('canvas')), context = canvas.getContext('2d'); let fs = parseFloat(style.fontSize); const text = (el.textContent || '').trim(); if (!text || !context) return; const measure = size => { context.font = `${style.fontStyle} ${style.fontWeight} ${size}px ${style.fontFamily}`; return context.measureText(text).width + Math.max(0, text.length - 1) * (parseFloat(style.letterSpacing) || 0) }; const width = measure(fs); if (width > maxWidthPx) { const labelScale = Math.min(1, (el.closest('.label')?.clientWidth || 800) / 800); fs = Math.max(minFontPx * labelScale, Math.floor(fs * maxWidthPx / width)); el.style.fontSize = fs + 'px' } }
 function fitLabelTexts(root) { if (!root) return; root.querySelectorAll('.dataTable .cellValue:not([data-out="operador"])').forEach(v => fitText(v, v.parentElement.clientWidth * 0.92)); const content = root.querySelector('.content'); fitText(root.querySelector('.titleText'), content.clientWidth * 0.94, 22); const codMain = root.querySelector('.codMain'), codValueMain = root.querySelector('.codValueMain'), codStack = root.querySelector('.codStack'), codValue = root.querySelector('.codValue'); if (codMain && codValueMain) fitText(codValueMain, Math.max(40, codMain.clientWidth - 22), 18); if (codStack && codValue) fitText(codValue, Math.max(40, codStack.clientWidth - 22), 18); const medValue = root.querySelector('.medValue'), medContent = root.querySelector('.medContent'); if (medValue && medContent) fitText(medValue, medContent.clientWidth * 0.98, 16) }
 function resizePreview() {
   const el = document.querySelector('#previewLabel'), wmm = Number(cfg.largura_mm || 100), hmm = Number(cfg.comprimento_mm || 60); el.style.aspectRatio = `${wmm}/${hmm}`; requestAnimationFrame(() => {
     fitLabelTexts(el);
   })
 }
-async function updatePreview() { const d = values(); document.querySelectorAll('[data-out]').forEach(el => { const k = el.dataset.out; el.textContent = d[k] || '' }); const brandBand = document.querySelector('.brandBand'); if (brandBand) brandBand.classList.toggle('isEmpty', !String(d.cliente || '').trim()); const observationBox = document.querySelector('.observationBox'); if (observationBox) observationBox.classList.toggle('isEmpty', !String(d.observacao || '').trim()); const lotParts = String(d.lote_base || '').split('/', 2); setText('[data-out-lot] .lotTop', lotParts.length > 1 ? lotParts[1] : lotParts[0]); setText('[data-out-lot] .lotBottom', lotParts.length > 1 ? lotParts[0] : ''); setText('[data-out-qty] .qtyNumber', d.quantidade); setText('[data-out-qty] .qtyUnit', d.unidade); setText('[data-out-date="fabricacao"]', fmtDate(d.fabricacao)); setText('[data-out-valmes="validade"]', fmtMesAno(d.validade)); resizePreview(); if (!d.quantidade) return; try { const r = await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }), x = await r.json(); if (!r.ok) return; lastPrintProfile = x.impressao; setText('#qrText', x.qr); if (qrUrl) URL.revokeObjectURL(qrUrl); const qr = await fetch('/api/qr.svg', { method: 'POST', body: x.qr }); if (!qr.ok) return; const blob = await qr.blob(); qrUrl = URL.createObjectURL(blob); const qrBox = document.querySelector('#qrBox'); if (qrBox) { qrBox.classList.remove('empty'); qrBox.replaceChildren(Object.assign(document.createElement('img'), { alt: 'QR Code', src: qrUrl })) } resizePreview(); return x } catch (e) { console.error('Falha ao atualizar a prévia:', e) } }
+async function updatePreview() { const d = values(); document.querySelectorAll('[data-out]').forEach(el => { const k = el.dataset.out; el.textContent = d[k] || '' }); const brandBand = document.querySelector('.brandBand'); if (brandBand) brandBand.classList.toggle('isEmpty', !String(d.cliente || '').trim()); const observationBox = document.querySelector('.observationBox'); if (observationBox) observationBox.classList.toggle('isEmpty', !String(d.observacao || '').trim()); const lotParts = String(d.lote_base || '').split('/', 2); setText('[data-out-lot] .lotTop', lotParts.slice().reverse().join('/')); setText('[data-out-lot] .lotBottom', ''); setText('[data-out-qty] .qtyNumber', d.quantidade); setText('[data-out-qty] .qtyUnit', d.unidade); setText('[data-out-date="fabricacao"]', fmtDate(d.fabricacao)); setText('[data-out-valmes="validade"]', fmtMesAno(d.validade)); resizePreview(); if (!d.quantidade) return; try { const r = await fetch('/api/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }), x = await r.json(); if (!r.ok) return; lastPrintProfile = x.impressao; setText('#qrText', x.qr); if (qrUrl) URL.revokeObjectURL(qrUrl); const qr = await fetch('/api/qr.svg', { method: 'POST', body: x.qr }); if (!qr.ok) return; const blob = await qr.blob(); qrUrl = URL.createObjectURL(blob); const qrBox = document.querySelector('#qrBox'); if (qrBox) { qrBox.classList.remove('empty'); qrBox.replaceChildren(Object.assign(document.createElement('img'), { alt: 'QR Code', src: qrUrl })) } resizePreview(); return x } catch (e) { console.error('Falha ao atualizar a prévia:', e) } }
 async function showPrintPreview() { if (!form.reportValidity()) return; setBusy(true, 'Preparando visualização', 'Gerando QR e conferindo dimensões'); try { const result = await updatePreview(); if (!result || !lastPrintProfile) throw new Error('Não foi possível gerar a prova da etiqueta. Confira os campos.'); const modal = document.querySelector('#printPreviewModal'), canvas = document.querySelector('#printPreviewCanvas'), clone = document.querySelector('#previewLabel').cloneNode(true), p = lastPrintProfile; clone.removeAttribute('id'); clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id')); clone.querySelectorAll('*').forEach(el => el.style.removeProperty('font-size')); clone.style.aspectRatio = `${p.largura_mm}/${p.comprimento_mm}`; canvas.replaceChildren(clone); document.querySelector('#printPreviewMeta').textContent = `${p.largura_mm} × ${p.comprimento_mm} mm • ${p.dpi} dpi • ${p.largura_dots} × ${p.comprimento_dots} dots`; modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); fitLabelTexts(clone); document.querySelector('#closePrintPreview').focus() } catch (error) { status(error.message, 'error') } finally { setBusy(false) } }
 function closePrintPreview() { const modal = document.querySelector('#printPreviewModal'); modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true') }
 form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(updatePreview, 250) });
@@ -48,7 +48,27 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => { documen
 document.querySelector('#reportsMount').append(document.querySelector('.monthlyReportPanel'));
 document.querySelector('nav button[data-tab="reports"]').addEventListener('click', loadReportPeriods);
 document.querySelector('#saveSettings').onclick = async () => { const settingsForm = document.querySelector('#settingsForm'), out = document.querySelector('#settingsStatus'); if (!settingsForm.reportValidity()) return; setBusy(true, 'Salvando configurações', 'Aplicando filial, dimensões e impressora'); try { const d = Object.fromEntries(new FormData(settingsForm)), r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }), x = await r.json(); if (!r.ok) throw new Error(x.erro); out.textContent = 'Configurações salvas.'; out.className = 'status ok'; await loadState(); await updatePreview(); showToast(`Filial ${cfg.filial} e configurações aplicadas.`, 'ok') } catch (e) { out.textContent = e.message; out.className = 'status error'; showToast(e.message, 'error') } finally { setBusy(false) } };
-async function loadHistory() { const body = document.querySelector('#historyRows'); body.innerHTML = '<tr><td colspan="10">Carregando histórico...</td></tr>'; try { const response = await fetch('/api/historico'); if (!response.ok) throw new Error('Não foi possível carregar o histórico.'); const rows = await response.json(); historyCache = Object.fromEntries(rows.map(x => [x.id, x])); body.innerHTML = rows.map((x, index) => `<tr><td><strong>${escapeHtml(x.identificador)}</strong></td><td>${escapeHtml(x.criada_em.replace('T', ' '))}</td><td>${escapeHtml(x.dados.produto_codigo || '')}</td><td>${escapeHtml(x.dados.lote_controle || '')}</td><td>${escapeHtml(x.destino)}</td><td>${escapeHtml(x.dados.observacao || '')}</td><td><span class="badge ${x.sucesso ? '' : 'fail'}">${x.sucesso ? 'OK' : 'Falha'}</span>${x.erro ? `<br><small title="${escapeHtml(x.erro)}">${escapeHtml(x.erro.slice(0, 45))}</small>` : ''}</td><td><button class="smallButton" onclick="reuseHistory(${Number(x.id)})">Usar novamente</button></td><td><a class="button smallButton" href="/api/etiqueta/${Number(x.id)}.prn">PRN</a></td><td>${index === 0 ? `<button class="smallButton undoButton" onclick="undoLastHistory(${Number(x.id)}, '${escapeHtml(x.identificador)}')">Apagar erro e recuperar número</button>` : '<span class="correctionUnavailable">Somente a última</span>'}</td></tr>`).join('') || '<tr><td colspan="10">Nenhuma etiqueta gerada.</td></tr>' } catch (e) { body.innerHTML = '<tr><td colspan="10">Não foi possível carregar o histórico.</td></tr>'; showToast(e.message, 'error') } }
+async function loadHistory() { const body = document.querySelector('#historyRows'); body.innerHTML = '<tr><td colspan="11">Carregando histórico...</td></tr>'; try { const response = await fetch('/api/historico'); if (!response.ok) throw new Error('Não foi possível carregar o histórico.'); const rows = await response.json(); historyCache = Object.fromEntries(rows.map(x => [x.id, x])); body.innerHTML = rows.map((x, index) => `<tr><td><strong>${escapeHtml(x.identificador)}</strong></td><td>${escapeHtml(x.criada_em.replace('T', ' '))}</td><td>${escapeHtml(x.dados.produto_codigo || '')}</td><td>${escapeHtml(x.dados.lote_controle || '')}</td><td>${escapeHtml(x.destino)}</td><td>${escapeHtml(x.dados.observacao || '')}</td><td><span class="badge ${x.sucesso ? '' : 'fail'}">${x.sucesso ? 'OK' : 'Falha'}</span>${x.erro ? `<br><small title="${escapeHtml(x.erro)}">${escapeHtml(x.erro.slice(0, 45))}</small>` : ''}</td><td><button class="smallButton" onclick="reuseHistory(${Number(x.id)})">Usar novamente</button></td><td><a class="button smallButton" href="/api/etiqueta/${Number(x.id)}.prn">PRN</a></td><td>${index === 0 ? `<button class="smallButton undoButton" onclick="undoLastHistory(${Number(x.id)}, '${escapeHtml(x.identificador)}')">Apagar erro e recuperar número</button>` : '<span class="correctionUnavailable">Somente a última</span>'}</td><td><button type="button" class="smallButton dangerButton deleteLabelButton" onclick="deleteHistoryLabel(${Number(x.id)})" title="Excluir etiqueta" aria-label="Excluir etiqueta ${escapeHtml(x.identificador)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></td></tr>`).join('') || '<tr><td colspan="11">Nenhuma etiqueta gerada.</td></tr>' } catch (e) { body.innerHTML = '<tr><td colspan="11">Não foi possível carregar o histórico.</td></tr>'; showToast(e.message, 'error') } }
+async function deleteHistoryLabel(id) {
+  const item = historyCache[id];
+  if (!item) return;
+  const confirmed = await confirmAction('Excluir etiqueta?', `Excluir a etiqueta ${item.identificador} do histórico? O contador será mantido. Um backup será criado automaticamente.`, 'Excluir etiqueta');
+  if (!confirmed) return;
+  setBusy(true, 'Excluindo etiqueta', 'Atualizando o histórico');
+  try {
+    const response = await fetch(`/api/historico/${id}`, { method: 'DELETE' });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.erro || 'Não foi possível excluir a etiqueta.');
+    reportPeriods = [];
+    document.querySelector('#reportYear').replaceChildren();
+    await Promise.all([loadState(), loadHistory(), loadReportPeriods()]);
+    showToast(`Etiqueta ${result.identificador} excluída.`, 'ok');
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    setBusy(false);
+  }
+}
 const loadHistoryRows = loadHistory;
 loadHistory = async function () {
   await loadHistoryRows();
@@ -91,29 +111,53 @@ document.querySelector('#clearHistory').onclick = async () => {
   }
 };
 
+let deletePreviewVersion = 0;
+async function updateDeleteQuantity() {
+  const version = ++deletePreviewVersion;
+  const quantidade = Number(document.querySelector('#deleteLastCount').value);
+  document.querySelector('#deleteLastRange').value = '';
+  document.querySelector('#deleteLastCorrect').value = '';
+  if (!Number.isSafeInteger(quantidade) || quantidade < 1) return null;
+  try {
+    const response = await fetch('/api/historico/apagar-ultimas/previa', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantidade })
+    });
+    const selection = await response.json();
+    if (version !== deletePreviewVersion) return null;
+    if (!response.ok) throw new Error(selection.erro);
+    document.querySelector('#deleteLastRange').value = `${selection.primeiro} \u2192 ${selection.ultimo}`;
+    document.querySelector('#deleteLastCorrect').value = String(selection.ultimo_correto).padStart(5, '0');
+    return selection;
+  } catch (error) {
+    if (version === deletePreviewVersion) document.querySelector('#deleteLastRange').placeholder = error.message;
+    return null;
+  }
+}
+document.querySelector('#deleteLastCount').oninput = updateDeleteQuantity;
 document.querySelector('#deleteHistoryRange').onclick = async () => {
-  const inicio = Number(document.querySelector('#deleteRangeStart').value);
-  const fim = Number(document.querySelector('#deleteRangeEnd').value);
-  const proximo = Number(document.querySelector('#deleteRangeNext').value);
-  if (![inicio, fim, proximo].every(Number.isInteger) || inicio < 1 || fim < inicio || proximo < 1) {
-    showToast('Preencha o número inicial, o final e o próximo número corretamente.', 'error');
+  try { await loadState() } catch (error) { showToast('Não foi possível consultar o contador atual.', 'error'); return }
+  const selection = await updateDeleteQuantity();
+  if (!selection) {
+    showToast('Informe uma quantidade inteira válida, sem ultrapassar a sequência atual.', 'error');
     return;
   }
+  const { primeiro, ultimo, ultimo_correto, proximo_contador: proximo, quantidade, ids } = selection;
   const confirmButton = document.querySelector('#confirmOk');
   confirmButton.classList.add('confirmDanger');
   const confirmed = await confirmAction(
-    'Confirmar exclusão do intervalo?',
-    `Serão apagadas as etiquetas de ${String(inicio).padStart(5, '0')} até ${String(fim).padStart(5, '0')}. Depois, o próximo contador será exatamente ${String(proximo).padStart(5, '0')}. Um backup será criado antes da exclusão.`,
-    'Excluir intervalo'
+    'Apagar do topo para baixo?',
+    `Serão apagadas as primeiras ${quantidade} etiquetas da lista, de ${primeiro} até ${ultimo}, de cima para baixo. O último número correto ficará em ${ultimo_correto}. A próxima impressão será ${proximo}. Um backup será criado antes da exclusão.`,
+    'Apagar e voltar contador'
   );
   confirmButton.classList.remove('confirmDanger');
   if (!confirmed) return;
-  setBusy(true, 'Excluindo intervalo', 'Criando backup e ajustando a numeração');
+  setBusy(true, 'Apagando últimas etiquetas', 'Criando backup e ajustando a numeração');
   try {
-    const response = await fetch('/api/historico/apagar-intervalo', {
+    const response = await fetch('/api/historico/apagar-ultimas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inicio, fim, proximo })
+      body: JSON.stringify({ quantidade, ids })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.erro || 'Não foi possível excluir o intervalo.');
@@ -138,7 +182,7 @@ function updateReportSummary() {
   const rows = reportPeriods.filter(item => Number(item.ano) === ano && (annual || Number(item.mes) === mes));
   document.querySelector('#reportPeriodTotal').textContent = rows.reduce((sum, item) => sum + Number(item.total), 0).toLocaleString('pt-BR');
   const base = cfg.pasta_relatorios || 'Pasta externa';
-  document.querySelector('#reportFolderPreview').textContent = annual ? `${base} / ${ano} / etiquetas-${ano}-anual.xlsx` : `${base} / ${ano} / ${String(mes).padStart(2, '0')}`;
+  document.querySelector('#reportFolderPreview').textContent = annual ? `${base} / ${ano} / etiquetas-${ano}-anual.xlsx` : `${base} / ${ano} / ${String(mes).padStart(2, '0')} / etiquetas-${ano}-${String(mes).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}.xlsx`;
   document.querySelector('#generateMonthlyReport').textContent = annual ? 'Criar relatório anual' : 'Criar relatório mensal';
   const download = document.querySelector('#downloadMonthlyReport'); download.hidden = true;
   document.querySelector('#monthlyReportStatus').textContent = 'Confira o período e clique em criar relatório.';

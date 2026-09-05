@@ -90,14 +90,14 @@ def resolve_printer(configured: str) -> str:
         # quando o EnumPrinters ainda não as devolveu nesta sessão do Windows.
         if _printer_can_open(configured):
             return configured.strip()
-    match = recommended_zebra(printers)
-    if match:
-        return match
     if configured:
         raise RuntimeError(
             f'A impressora "{configured}" não está instalada no Windows. '
             "Use Procurar impressoras nas configurações."
         )
+    match = recommended_zebra(printers)
+    if match:
+        return match
     raise RuntimeError(
         "Nenhuma Zebra ZD220 foi encontrada no Windows. Instale o driver ZDesigner e tente novamente."
     )
@@ -122,26 +122,29 @@ def raw_print(printer: str, content: str) -> str:
     # enviados precisam usar o mesmo encoding, senão acentos (Ç, Ã, Á...)
     # chegam corrompidos ou somem — não use cp850 aqui.
     payload = content.encode("utf-8")
-    written = ctypes.c_ulong()
     document_started = False
-    page_started = False
     try:
         if not winspool.StartDocPrinterW(handle, 1, ctypes.byref(doc)):
             raise OSError(ctypes.get_last_error(), "Falha ao iniciar o documento.")
         document_started = True
-        try:
-            if not winspool.StartPagePrinter(handle):
-                raise OSError(ctypes.get_last_error(), "Falha ao iniciar a página.")
-            page_started = True
-            if not winspool.WritePrinter(handle, payload, len(payload), ctypes.byref(written)):
+        if not winspool.StartPagePrinter(handle):
+            raise OSError(ctypes.get_last_error(), "Falha ao iniciar a página.")
+        offset = 0
+        while offset < len(payload):
+            chunk = payload[offset:offset + 65536]
+            written = ctypes.c_ulong()
+            if not winspool.WritePrinter(handle, chunk, len(chunk), ctypes.byref(written)):
                 raise OSError(ctypes.get_last_error(), "Falha ao enviar os dados RAW.")
-            if written.value != len(payload):
-                raise OSError(f"A impressora recebeu apenas {written.value} de {len(payload)} bytes.")
-        finally:
-            if page_started:
-                winspool.EndPagePrinter(handle)
-            if document_started:
-                winspool.EndDocPrinter(handle)
+            if not 0 < written.value <= len(chunk):
+                raise OSError("O Windows não confirmou o recebimento dos dados da etiqueta.")
+            offset += written.value
+        if not winspool.EndPagePrinter(handle):
+            raise OSError(ctypes.get_last_error(), "Falha ao finalizar a página de impressão.")
+        if not winspool.EndDocPrinter(handle):
+            raise OSError(ctypes.get_last_error(), "Falha ao concluir o envio para a fila de impressão.")
+        document_started = False
     finally:
+        if document_started:
+            winspool.AbortPrinter(handle)
         winspool.ClosePrinter(handle)
     return printer

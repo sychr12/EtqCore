@@ -23,7 +23,8 @@ def caminho_relatorio(ano: int, mes: int, pasta_base: str | Path | None = None) 
     if not 2000 <= ano <= 2100 or not 1 <= mes <= 12:
         raise ValueError("Ano ou mês inválido.")
     base = Path(pasta_base) if pasta_base else REPORTS_DIR
-    return base / str(ano) / f"{mes:02d}" / f"etiquetas-{ano:04d}-{mes:02d}.xlsx"
+    dia = datetime.now().day
+    return base / str(ano) / f"{mes:02d}" / f"etiquetas-{ano:04d}-{mes:02d}-{dia:02d}.xlsx"
 
 
 def caminho_relatorio_anual(ano: int, pasta_base: str | Path | None = None) -> Path:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from contextlib import closing
+from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -147,6 +148,14 @@ class ApiTests(unittest.TestCase):
         self.assertIn("^XZ", zpl)
         self.assertNotIn("^FDOBSERVAÇÃO:^FS", zpl)
 
+    def test_observation_never_changes_qr_payload(self) -> None:
+        from services.qrcode_service import qr_payload
+
+        baseline = qr_payload(VALID_LABEL, "TB0000000001")
+        for observation in ("", "   ", "Separar para inspecao"):
+            self.assertEqual(qr_payload({**VALID_LABEL, "observacao": observation}, "TB0000000001"), baseline)
+        self.assertNotIn("(O)", baseline)
+
     def test_black_brand_band_only_exists_when_client_is_filled(self) -> None:
         from services.qrcode_service import qr_payload
         from services.zpl import make_zpl
@@ -161,10 +170,12 @@ class ApiTests(unittest.TestCase):
         self.assertNotIn("^FO700,28^GB72,424,72,B,0^FS", zpl_without)
         self.assertIn("^FO28,232^GB744,4,4,B,0^FS", zpl_without)
 
-        with_client = validate_label({**VALID_LABEL, "cliente": "AMAZONTAPE"})
+        with_client = validate_label({**VALID_LABEL, "cliente": "AMAZONTAPE", "lote_base": "4016/2026", "quantidade": "910"})
         zpl_with = make_zpl(with_client, 1, "TB0000000001", qr_payload(with_client, "TB0000000001"), settings)
         self.assertIn("^FO700,28^GB72,424,72,B,0^FS", zpl_with)
         self.assertIn("^FDAMAZONTAPE^FS", zpl_with)
+        self.assertIn("^FD2026/4016^FS", zpl_with)
+        self.assertIn("^FD910 pcs^FS", zpl_with)
 
     def test_windows_folder_picker_returns_selected_path(self) -> None:
         selected = r"C:\Relatorios Compartilhados"
@@ -200,7 +211,7 @@ class ApiTests(unittest.TestCase):
                     "sucesso": 1,
                     "erro": None,
                 }])
-                self.assertEqual(arquivo, Path(directory) / "2026" / "08" / "etiquetas-2026-08.xlsx")
+                self.assertEqual(arquivo, Path(directory) / "2026" / "08" / f"etiquetas-2026-08-{datetime.now().day:02d}.xlsx")
                 self.assertTrue(arquivo.exists())
 
                 from openpyxl import load_workbook
@@ -247,7 +258,7 @@ class ApiTests(unittest.TestCase):
             self.assertFalse((resolved / ".etqcore-teste.tmp").exists())
 
             file_path = relatorio_excel.caminho_relatorio(2026, 8, external)
-            self.assertEqual(file_path, external / "2026" / "08" / "etiquetas-2026-08.xlsx")
+            self.assertEqual(file_path, external / "2026" / "08" / f"etiquetas-2026-08-{datetime.now().day:02d}.xlsx")
 
     def test_generation_reserves_unique_counters_and_returns_zpl(self) -> None:
         with TemporaryDirectory() as directory:
@@ -293,7 +304,8 @@ class ApiTests(unittest.TestCase):
                 # desenhados como textos/blocos visuais na etiqueta.
                 self.assertIn("(T)CAPA", payload["zpl"])
                 self.assertIn("(S)BC", payload["zpl"])
-                self.assertIn("(O)Separar para inspeção", payload["zpl"])
+                self.assertNotIn("(O)Separar para inspeção", payload["zpl"])
+                self.assertIn("^FDSeparar para inspeção^FS", payload["zpl"])
                 self.assertIn("^FDOBSERVAÇÃO:^FS", payload["zpl"])
                 self.assertIn("Separar para inspeção", payload["zpl"])
                 self.assertNotIn("^FO232,28^GB88,204,88,B,0^FS", payload["zpl"])
@@ -432,6 +444,114 @@ class ApiTests(unittest.TestCase):
                     self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 0)
                     self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "89")
                 self.assertTrue(Path(response.get_json()["backup"]).exists())
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_delete_individual_labels_preserves_counter_and_other_rows(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "clear-range.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2, 3):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='4' WHERE chave='proximo_contador'")
+                    con.commit()
+
+                with closing(database.db()) as con:
+                    ids = {row["contador"]: row["id"] for row in con.execute("SELECT id, contador FROM etiquetas")}
+                for counter in (2, 3):
+                    response = self.client.delete(f"/api/historico/{ids[counter]}")
+                    self.assertEqual(response.status_code, 200)
+                    self.assertTrue(Path(response.get_json()["backup"]).exists())
+                    with closing(database.db()) as con:
+                        self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "4")
+                with closing(database.db()) as con:
+                    self.assertEqual([row[0] for row in con.execute("SELECT contador FROM etiquetas")], [1])
+                self.assertEqual(self.client.delete(f"/api/historico/{ids[2]}").status_code, 404)
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_delete_last_twenty_preserves_first_eighty_and_restores_81(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "clear-range.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in range(1, 101):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='101' WHERE chave='proximo_contador'")
+                    con.commit()
+
+                response = self.client.post(
+                    "/api/historico/apagar-intervalo",
+                    json={"inicio": 81, "fim": 100, "proximo": 81},
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["registros_apagados"], 20)
+                with closing(database.db()) as con:
+                    self.assertEqual(con.execute("SELECT COUNT(*) FROM etiquetas").fetchone()[0], 80)
+                    self.assertEqual(con.execute("SELECT valor FROM config WHERE chave='proximo_contador'").fetchone()[0], "81")
+                    self.assertEqual([row[0] for row in con.execute("SELECT contador FROM etiquetas ORDER BY contador")], list(range(1, 81)))
+                self.assertTrue(Path(response.get_json()["backup"]).exists())
+            finally:
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
+                    old_data, old_db, old_database_backup, old_label_backup,
+                )
+
+    def test_delete_top_rows_counts_records_despite_gaps(self) -> None:
+        with TemporaryDirectory() as directory:
+            old_data, old_db, old_database_backup, old_label_backup = (
+                database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR,
+            )
+            try:
+                database.DATA_DIR = Path(directory)
+                database.DB_PATH = Path(directory) / "clear-range.db"
+                database.BACKUP_DIR = Path(directory) / "backups"
+                etiqueta_model.BACKUP_DIR = database.BACKUP_DIR
+                database.init_db()
+                with closing(database.db()) as con:
+                    for contador in (1, 2, 4, 5):
+                        con.execute(
+                            "INSERT INTO etiquetas(contador,identificador,criada_em,dados_json,qr_texto,zpl,destino,sucesso) VALUES(?,?,?,?,?,?,?,1)",
+                            (contador, f"TB{contador:010d}", "2026-09-03T10:00:00", "{}", "QR", "ZPL", "download"),
+                        )
+                    con.execute("UPDATE config SET valor='6' WHERE chave='proximo_contador'")
+                    con.commit()
+
+                preview = self.client.post("/api/historico/apagar-ultimas/previa", json={"quantidade": 2}).get_json()
+                self.assertEqual((preview["primeiro"], preview["ultimo"], preview["ultimo_correto"]), (5, 4, 2))
+                stale = self.client.post("/api/historico/apagar-ultimas", json={"quantidade": 2, "ids": [0, 1]})
+                self.assertEqual(stale.status_code, 400)
+                response = self.client.post("/api/historico/apagar-ultimas", json={"quantidade": 2, "ids": preview["ids"]})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.get_json()["registros_apagados"], 2)
+                self.assertEqual(response.get_json()["proximo_contador"], 3)
+                self.assertTrue(Path(response.get_json()["backup"]).exists())
+                with closing(database.db()) as con:
+                    self.assertEqual([r[0] for r in con.execute("SELECT contador FROM etiquetas ORDER BY id")], [1, 2])
             finally:
                 database.DATA_DIR, database.DB_PATH, database.BACKUP_DIR, etiqueta_model.BACKUP_DIR = (
                     old_data, old_db, old_database_backup, old_label_backup,

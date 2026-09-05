@@ -287,6 +287,21 @@ def undo_last_history(label_id: int):
         return jsonify({"erro": "Não foi possível desfazer a etiqueta com segurança."}), 500
 
 
+@api_bp.delete("/historico/<int:label_id>")
+def delete_history_label(label_id: int):
+    """Exclui uma etiqueta individual, preservando o contador."""
+    try:
+        if etiqueta_model.obter_zpl(label_id) is None:
+            return jsonify({"erro": "Etiqueta não encontrada no histórico."}), 404
+        backup = etiqueta_model.gerar_backup()
+        removida = etiqueta_model.apagar_etiqueta(label_id)
+        return jsonify({"ok": True, "identificador": removida["identificador"], "backup": str(backup)})
+    except ValueError as exc:
+        return jsonify({"erro": str(exc)}), 404
+    except (OSError, sqlite3.Error):
+        return jsonify({"erro": "Não foi possível excluir a etiqueta."}), 500
+
+
 @api_bp.post("/historico/apagar-tudo")
 def clear_history():
     """Cria um backup, apaga o histórico completo e reinicia o contador."""
@@ -301,6 +316,27 @@ def clear_history():
         })
     except (OSError, sqlite3.Error):
         return jsonify({"erro": "Não foi possível apagar o histórico com segurança."}), 500
+
+
+@api_bp.post("/historico/apagar-ultimas/previa")
+@api_bp.post("/historico/apagar-ultimas")
+def clear_latest_history():
+    try:
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("Informe a quantidade de etiquetas.")
+        selection = etiqueta_model.previa_exclusao_ultimas(data.get("quantidade"))
+        if request.path.endswith("/previa"):
+            return jsonify(selection)
+        if data.get("ids") != selection["ids"]:
+            raise ValueError("O histórico mudou. Revise a exclusão novamente.")
+        backup = etiqueta_model.gerar_backup()
+        result = etiqueta_model.apagar_ultimas(data["quantidade"], data["ids"])
+        return jsonify({**result, "backup": str(backup), "ok": True})
+    except ValueError as exc:
+        return jsonify({"erro": str(exc)}), 400
+    except (OSError, sqlite3.Error):
+        return jsonify({"erro": "Não foi possível excluir as etiquetas com segurança."}), 500
 
 
 @api_bp.post("/historico/apagar-intervalo")

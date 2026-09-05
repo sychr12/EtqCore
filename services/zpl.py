@@ -365,13 +365,13 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     top_label_offset = max(2, row_h // 18)
     lot_label_offset = top_label_offset + max(2, row_h // 22)
     lot_parts = str(data.get("lote_base") or "").split("/", 1)
-    lot_top = lot_parts[1] if len(lot_parts) > 1 else lot_parts[0]
+    lot_top = "/".join(reversed(lot_parts))
     lot_bottom = lot_parts[0] if len(lot_parts) > 1 else ""
     _stat_cell(z, table_x0, cy0, col_w, row_h, pad,
                "LOTE DE FABRICAÇÃO", lot_top,
                label_font=20, value_font=42,
                label_align="C", value_align="C",
-               secondary_value=lot_bottom, secondary_font=42,
+               secondary_value="", secondary_font=42,
                primary_ratio=0.50,
                label_offset=lot_label_offset,
                value_offset=max(0, top_value_offset - 6))
@@ -391,9 +391,9 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     qty_text = str(data.get("quantidade") or "")
     qty_unit = str(data.get("unidade") or "")
     _stat_cell(z, table_x0, cy0 + row_h, col_w, top_h - row_h, pad,
-               "QUANTIDADE", qty_text, value_font=50, label_font=23,
+               "QUANTIDADE", f"{qty_text} {qty_unit}".strip(), value_font=50, label_font=23,
                label_align="C", value_align="C",
-               secondary_value=qty_unit, secondary_font=30,
+               secondary_value="", secondary_font=30,
                label_offset=top_label_offset + 4,
                value_offset=max(0, top_value_offset - 6))
     _stat_cell(z, date_col_x, cy0 + row_h, col_w, top_h - row_h, pad,
@@ -414,7 +414,7 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
 
     # --- Linha COD / COD PROD -----------------------------------------------------
     cod_y = title_y + title_h
-    cod_main_w = int(cw * 0.55)
+    cod_main_w = int(cw * 0.48)
     _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, pad,
                "COD:", str(data.get("produto_codigo") or ""),
                label_font=18, value_font=44, value_offset=pad // 2)
@@ -426,22 +426,25 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
 
     # --- Linha inferior: MEDIDAS/OBSERVAÇÃO + logo -----------------------------------
     bottom_y = cod_y + cod_h
-    logo_w = int(cw * 0.44)
-    medidas_w = cw - logo_w
     observacao = str(data.get("observacao") or "").strip()
-    medidas_h = round(bottom_h * 0.55) if observacao else bottom_h
-    _inline_pair(z, cx0 + pad, bottom_y, medidas_w - 2 * pad, medidas_h,
-                 "MEDIDAS: ", str(data.get("medidas") or ""), label_ratio=0.30,
-                 value_font=32 if observacao else 44, label_font=18 if observacao else 24)
+    logo_w = int(cw * (0.26 if observacao else 0.44))
+    medidas_w = int(cw * 0.39) if observacao else cw - logo_w
+    obs_x = cx0 + medidas_w + logo_w
+    obs_w = cw - medidas_w - logo_w
     if observacao:
-        obs_y = bottom_y + medidas_h
-        obs_h = bottom_h - medidas_h
-        z.line_h(cx0, obs_y, medidas_w, max(2, mmw(0.0028)))
-        _stat_cell(z, cx0, obs_y, medidas_w, obs_h, pad,
-                   "OBSERVAÇÃO:", observacao,
-                   label_font=13, value_font=15, wrap_value=True)
+        _stat_cell(z, cx0, bottom_y, medidas_w, bottom_h, pad,
+                   "MEDIDAS:", str(data.get("medidas") or ""),
+                   label_font=18, value_font=26)
+    else:
+        _inline_pair(z, cx0 + pad, bottom_y, medidas_w - 2 * pad, bottom_h,
+                     "MEDIDAS: ", str(data.get("medidas") or ""),
+                     label_ratio=0.30, value_font=44, label_font=24)
     z.line_v(cx0 + medidas_w, bottom_y, bottom_h, border)
-
+    if observacao:
+        z.line_v(obs_x, bottom_y, bottom_h, border)
+        _stat_cell(z, obs_x, bottom_y, obs_w, bottom_h, pad,
+                   "OBSERVAÇÃO:", observacao,
+                   label_font=16, value_font=18, wrap_value=True)
     logo_x0 = cx0 + medidas_w
     logo_target_w = max(10, logo_w - 2 * max(8, pad))
     logo_w_px, logo_h_px, logo_bpr, logo_data = _logo_gfa_data(logo_target_w)

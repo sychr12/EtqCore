@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=74" />
+    <link rel="stylesheet" href="/static/style.css?v=76" />
   </head>
 
   <body>
@@ -28,21 +28,25 @@
       </div>
     </header>
 
-    <nav>
-      <button class="active" data-tab="editor">
-        Criar etiqueta
+    <nav class="workspaceNav" aria-label="Navegação principal">
+      <button type="button" class="active" data-tab="editor">
+        <svg class="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 13l-7 7a2 2 0 0 1-3 0l-7-7V4h9l8 6a2 2 0 0 1 0 3Z"/><circle cx="7.5" cy="8" r="1.5"/></svg>
+        <span>Criar etiqueta<small>Preparar e imprimir</small></span>
       </button>
 
-      <button data-tab="history">
-        Histórico
+      <button type="button" data-tab="history">
+        <svg class="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 5v6h6M12 7v5l3 2"/></svg>
+        <span>Histórico<small>Consultar etiquetas</small></span>
       </button>
 
-      <button data-tab="reports">
-        Relatórios
+      <button type="button" data-tab="reports">
+        <svg class="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 16v-3m4 3V8m4 8v-5"/></svg>
+        <span>Relatórios<small>Acompanhar produção</small></span>
       </button>
 
-      <button data-tab="settings">
-        Configurações
+      <button type="button" data-tab="settings">
+        <svg class="navIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg>
+        <span>Configurações<small>Impressora e ajustes</small></span>
       </button>
     </nav>
 
@@ -380,7 +384,6 @@
 
                   <!-- ==================== MEDIDAS + LOGO ==================== -->
                   <div class="bottomRow">
-                    <div class="detailsStack">
                     <div class="medidas">
                       <svg
                         class="medIcon"
@@ -426,12 +429,6 @@
                       </div>
                     </div>
 
-                    <div class="observationBox isEmpty">
-                      <span class="observationLabel">OBSERVAÇÃO:</span>
-                      <span class="observationValue" data-out="observacao"></span>
-                    </div>
-                    </div>
-
                     <!-- LOGO DA ETIQUETA -->
                     <div class="logoBox">
                       <img
@@ -439,6 +436,10 @@
                         alt="Logo"
                         class="logoImage"
                       />
+                    </div>
+                    <div class="observationBox isEmpty">
+                      <span class="observationLabel">OBSERVAÇÃO:</span>
+                      <span class="observationValue" data-out="observacao"></span>
                     </div>
                   </div>
                 </div>
@@ -576,18 +577,18 @@
           <div class="rangeDeletePanel">
             <div class="rangeDeleteHeading">
               <div>
-                <span>EXCLUSÃO POR INTERVALO</span>
-                <h3>Apagar etiquetas específicas</h3>
-                <p>Informe os contadores inicial e final. Depois escolha exatamente qual será o próximo número.</p>
+                <span>EXCLUSÃO POR QUANTIDADE</span>
+                <h3>Apagar últimas etiquetas</h3>
+                <p>Informe quantas etiquetas apagar. A exclusão começa no topo do histórico e segue de cima para baixo.</p>
               </div>
             </div>
             <div class="rangeDeleteFields">
-              <label>Número inicial<input id="deleteRangeStart" type="number" min="1" step="1" placeholder="1" /></label>
-              <label>Número final<input id="deleteRangeEnd" type="number" min="1" step="1" placeholder="88" /></label>
-              <label>Próximo número exato<input id="deleteRangeNext" type="number" min="1" step="1" placeholder="89" /></label>
+              <label>Quantidade a apagar<input id="deleteLastCount" type="number" min="1" step="1" placeholder="Ex.: 20" /></label>
+              <label>Etiquetas que serão apagadas<input id="deleteLastRange" type="text" readonly placeholder="Informe a quantidade" /></label>
+              <label>Último número correto após excluir<input id="deleteLastCorrect" type="text" readonly placeholder="Calculado automaticamente" /></label>
               <button class="dangerButton" id="deleteHistoryRange" type="button">Revisar exclusão</button>
             </div>
-            <small>O próximo número não pode repetir uma etiqueta que permaneceu no histórico.</small>
+            <small>Exemplo: chegou a 100 e errou as últimas 20? Apague 20: o último número correto volta para 80. A impressão seguinte continua a sequência.</small>
           </div>
           </div>
           </div>
@@ -617,6 +618,7 @@
                   <th>Reutilizar dados</th>
                   <th>Arquivo da impressora</th>
                   <th>Corrigir numeração</th>
+                  <th>Excluir</th>
                 </tr>
               </thead>
 
@@ -817,7 +819,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=27"
+      src="/static/app.js?v=28"
       defer
     ></script>
   </body>

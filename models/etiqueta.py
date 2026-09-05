@@ -162,6 +162,56 @@ def desfazer_ultima(label_id: int) -> dict:
         return dict(row)
 
 
+def apagar_etiqueta(label_id: int) -> dict:
+    """Exclui um registro individual sem alterar a sequência de numeração."""
+    with closing(db()) as con:
+        con.execute("BEGIN IMMEDIATE")
+        row = con.execute(
+            "SELECT id, identificador FROM etiquetas WHERE id=?", (label_id,)
+        ).fetchone()
+        if row is None:
+            raise ValueError("Etiqueta não encontrada no histórico.")
+        con.execute("DELETE FROM etiquetas WHERE id=?", (label_id,))
+        con.commit()
+        return dict(row)
+
+
+def _selecionar_ultimas(con, quantidade: int) -> dict:
+    if type(quantidade) is not int or quantidade < 1:
+        raise ValueError("Informe uma quantidade inteira maior que zero.")
+    rows = con.execute(
+        "SELECT id, contador FROM etiquetas ORDER BY id DESC LIMIT ?", (quantidade,)
+    ).fetchall()
+    if len(rows) != quantidade:
+        raise ValueError("A quantidade supera o total de etiquetas no histórico.")
+    ultimo = con.execute(
+        "SELECT COALESCE(MAX(contador), 0) FROM etiquetas WHERE id < ?", (rows[-1]["id"],)
+    ).fetchone()[0]
+    return {"ids": [row["id"] for row in rows], "quantidade": quantidade,
+            "primeiro": rows[0]["contador"], "ultimo": rows[-1]["contador"],
+            "ultimo_correto": ultimo, "proximo_contador": ultimo + 1}
+
+
+def previa_exclusao_ultimas(quantidade: int) -> dict:
+    with closing(db()) as con:
+        con.execute("BEGIN")
+        return _selecionar_ultimas(con, quantidade)
+
+
+def apagar_ultimas(quantidade: int, ids: list) -> dict:
+    """Exclui exatamente as primeiras linhas do histórico, na ordem exibida."""
+    with closing(db()) as con:
+        con.execute("BEGIN IMMEDIATE")
+        selection = _selecionar_ultimas(con, quantidade)
+        if selection["ids"] != ids:
+            raise ValueError("O histórico mudou. Revise a exclusão novamente.")
+        con.execute("DELETE FROM etiquetas WHERE id >= ?", (ids[-1],))
+        con.execute("UPDATE config SET valor=? WHERE chave='proximo_contador'",
+                    (str(selection["proximo_contador"]),))
+        con.commit()
+        return {**selection, "registros_apagados": quantidade}
+
+
 def apagar_todo_historico() -> int:
     """Apaga todos os registros e reinicia o contador dentro de uma transação."""
     with closing(db()) as con:

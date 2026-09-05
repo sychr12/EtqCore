@@ -3787,3 +3787,106 @@ tbody tr:hover { background: #f2faf8; }
 }
 
 
+
+/* Distribuição da etiqueta conforme o modelo de referência. */
+.label .dataTable > .cell:first-child > .lotStack { flex-direction: row; }
+.label .dataTable .lotStack .lotTop { font-size: min(4.2cqw, 9cqh); }
+.label .dataTable .lotStack .lotBottom { display: none; }
+.label .dataTable .cell.big .qtyStack { flex-direction: row; gap: 1cqw; align-items: baseline; padding-top: 2cqh; }
+.label .bottomRow > .medidas { flex: 0 0 39%; width: 39%; }
+.label .bottomRow > .logoBox { flex: 0 0 26%; width: 26%; border-right: .3cqw solid #000; }
+.label .bottomRow > .observationBox { display: flex; flex: 1; border-top: 0; padding: 1cqh 1cqw; justify-content: flex-start; }
+.label .codRow > .codMain { flex: 0 0 48%; width: 48%; }
+
+
+.label .bottomRow > .observationBox.isEmpty { display: none; }
+.label .bottomRow:has(> .observationBox.isEmpty) > .medidas { flex: 0 0 56%; width: 56%; }
+.label .bottomRow > .logoBox:has(+ .observationBox.isEmpty) { flex: 1 1 auto; width: auto; border-right: 0; }
+
+/* Menu principal: atalhos com destaque para a pagina selecionada. */
+nav.workspaceNav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 240px));
+    justify-content: center;
+    gap: 10px;
+    padding: 12px clamp(14px, 3vw, 48px);
+    background: #f6f9fb;
+    border-bottom: 1px solid #dce5eb;
+    box-shadow: 0 4px 12px rgba(15, 42, 71, .04);
+}
+.workspaceNav button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: 0;
+    min-height: 62px;
+    padding: 12px 16px;
+    border: 1px solid #dce5eb;
+    border-radius: 12px;
+    background: #fff;
+    color: #43576a;
+    text-align: left;
+    font-size: 13px;
+    transition: background .18s, border-color .18s, box-shadow .18s;
+}
+.workspaceNav button > span { display: grid; gap: 4px; }
+.workspaceNav button small { font-size: 10px; font-weight: 500; color: #667b8d; }
+.workspaceNav .navIcon { display: block; flex: 0 0 23px; width: 23px; height: 23px; margin: 0; transform: none; }
+.workspaceNav button:hover { background: #eef6f7; border-color: #9fcac3; color: #163f4c; }
+.workspaceNav button.active { background: #123a50; border-color: #123a50; color: #fff; box-shadow: 0 4px 10px rgba(18, 58, 80, .16); }
+.workspaceNav button.active small { color: #c3dce4; }
+.workspaceNav button.active .navIcon { color: #66dfc4; transform: none; }
+.workspaceNav button:focus-visible { outline: 3px solid #12a58a; outline-offset: 3px; }
+@media (max-width: 640px) {
+    nav.workspaceNav { gap: 6px; padding: 9px 10px; }
+    .workspaceNav button { min-height: 62px; padding: 9px 3px; flex-direction: column; justify-content: center; gap: 6px; font-size: 10px; text-align: center; }
+    .workspaceNav button small { display: none; }
+    .workspaceNav .navIcon { flex-basis: auto; width: 20px; height: 20px; }
+}
+
+/* Alinhamento dos campos da etiqueta, independente do tamanho da previa. */
+.label .dataTable > .cell:not(:nth-child(2)) {
+    display: grid;
+    grid-template-rows: 28% minmax(0, 1fr);
+    padding: 1cqh 1cqw;
+    align-items: center;
+    justify-items: center;
+}
+.label .dataTable > .cell:not(:nth-child(2)) > .cellLabel {
+    transform: none;
+    margin: 0;
+    width: 100%;
+    align-self: center;
+    text-align: center;
+    font-size: 1.9cqw;
+    line-height: 1.1;
+}
+.label .dataTable > .cell:first-child > .cellLabel { font-size: 1.65cqw; }
+.label .dataTable > .cell:not(:nth-child(2)) > .cellValue {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    margin: 0;
+    padding: 0;
+    transform: none;
+    min-height: 0;
+    max-height: none;
+    width: 100%;
+    line-height: 1;
+}
+.label .dataTable .lotStack .lotTop { font-size: 4.4cqw; line-height: 1; letter-spacing: -.035em; }
+.label .dataTable .qtyStack .qtyNumber { font-size: 5.3cqw; line-height: 1; }
+.label .dataTable .qtyStack .qtyUnit { font-size: 3cqw; line-height: 1; }
+.label .dataTable > .cell:nth-child(4) > .cellValue { font-size: 5.3cqw; }
+.label .dataTable > .cell:nth-child(2) { padding: 1.5cqh 1.3cqw; }
+.label .dataTable > .cell:nth-child(2) > .subRow { transform: none; align-items: center; min-height: 5cqh; gap: .6cqw; }
+.label .dataTable .subRow .cellLabel { font-size: 2cqw; }
+.label .dataTable .subRow .cellValue { font-size: 2.8cqw; line-height: 1.15; }
+.label .dataTable > .cell:nth-child(2) > .subRow:first-child .cellValue { font-size: 2.65cqw; }
+.label .bottomRow > .logoBox { box-sizing: border-box; padding: 1cqh 1cqw; }
+.label .bottomRow > .observationBox { min-width: 0; gap: 1cqh; }
+.label .bottomRow .observationLabel { font-size: 1.65cqw; }
+.label .bottomRow .observationValue { font-size: 1.7cqw; line-height: 1.2; overflow-wrap: anywhere; }
