@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=76" />
+    <link rel="stylesheet" href="/static/style.css?v=78" />
   </head>
 
   <body>
@@ -262,8 +262,11 @@
                   value="1"
                 />
 
-                <button class="print" id="print">
-                  Imprimir na ZD220
+                <button class="print" id="printCommon" type="button">
+                  Imprimir em impressora comum
+                </button>
+                <button class="printFile" id="print" type="button">
+                  Imprimir na Zebra
                 </button>
               </div>
             </div>
@@ -819,7 +822,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=28"
+      src="/static/app.js?v=29"
       defer
     ></script>
   </body>

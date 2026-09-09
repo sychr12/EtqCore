@@ -43,6 +43,13 @@ Clique duas vezes em `Iniciar Etiquetas Zebra.bat`. O navegador abrirá em
 
 ## Impressão
 
+Para testar em uma impressora comum, clique em **Imprimir em impressora comum**.
+Escolha a impressora na janela do navegador, papel A4 e escala 100%, sem
+cabeçalhos ou rodapés. Cada etiqueta recebe número e QR próprios e entra no
+histórico como `impressora_comum`. O registro confirma a preparação do arquivo;
+cancelar a janela não devolve os números e não confirma impressão física.
+O botão **Imprimir na Zebra** continua enviando ZPL diretamente.
+
 Em **Configurações**, informe o nome exato da impressora instalada no Windows.
 O envio é RAW/ZPL. O arquivo de impressão também pode ser baixado com extensão
 `.prn` para envio pelo driver ou por outro sistema.

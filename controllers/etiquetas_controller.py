@@ -216,7 +216,7 @@ def generate():
             raise ValueError("Envie os dados da etiqueta em formato JSON válido.")
         body = dict(payload)
         destino = body.pop("destino", "download")
-        if destino not in {"download", "imprimir"}:
+        if destino not in {"download", "imprimir", "impressora_comum"}:
             raise ValueError("Destino de geração inválido.")
         try:
             quantidade = int(body.pop("quantidade_etiquetas", 1))
@@ -245,6 +245,11 @@ def generate():
             "ultimo_identificador": resultado["last_identifier"],
             "quantidade": quantidade,
             "zpl": resultado["combined_zpl"],
+            "etiquetas": [
+                {"id": item["id"], "identificador": item["identificador"],
+                 "qr_svg": render_svg(item["qr"])}
+                for item in resultado["labels"]
+            ] if destino == "impressora_comum" else [],
         })
     except ValueError as exc:
         return jsonify({"erro": str(exc)}), 400

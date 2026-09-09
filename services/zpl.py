@@ -50,7 +50,9 @@ def _logo_gfa_data(target_w: int) -> tuple[int, int, int, str] | tuple[None, Non
                 byte = 0
                 bits = 0
         if bits:
-            row.append(f"{(byte << (8 - bits)):02X}")
+            # Os pixels já estão nos bits altos; deslocar novamente corrompe
+            # a última coluna de bytes quando a largura não é múltipla de 8.
+            row.append(f"{byte:02X}")
         rows.append("".join(row))
 
     bytes_per_row = len(rows[0]) // 2
@@ -101,14 +103,16 @@ class _Zpl:
         x: int, y: int, w: int, h: int,
         text: str, max_font: int, min_font: int,
         align: str = "L", reverse: bool = False,
+        width_ratio: float = 1.0,
     ) -> None:
         """Escreve `text` em uma linha, centralizado verticalmente dentro
         da caixa (x,y,w,h), com a fonte encolhendo até caber."""
-        font = _fit_font(text, w, h, max_font, min_font)
+        font = _fit_font(text, int(w / width_ratio), h, max_font, min_font)
+        font_width = max(1, int(font * width_ratio))
         ty = y + max(0, (h - font) // 2)
         reverse_cmd = "^FR" if reverse else ""
         self.lines.append(
-            f"^FO{x},{ty}{reverse_cmd}^A0N,{font},{font}^FB{max(1, w)},1,0,{align},0^FD{zpl_text(text)}^FS"
+            f"^FO{x},{ty}{reverse_cmd}^A0N,{font},{font_width}^FB{max(1, w)},1,0,{align},0^FD{zpl_text(text)}^FS"
         )
 
     def text_wrapped(
@@ -161,14 +165,15 @@ def _stat_cell(
     label_h = max(16, int(h * 0.31))
     label_offset = max(0, int(label_offset))
     value_offset = max(0, int(value_offset))
-    value_y = y + label_h + value_offset
-    # Mantém a altura útil da fonte ao deslocar o valor; o texto é centralizado
-    # dentro desta área e continua protegido pela borda inferior da célula.
-    value_h = max(12, h - label_h - pad // 2)
+    label_y = y + pad // 2 + label_offset
+    value_y = max(y + label_h + value_offset, label_y + label_h + max(4, pad // 5))
+    # O deslocamento consome espaço: mantém a margem inferior mesmo quando
+    # um valor é baixado para ficar alinhado aos campos vizinhos.
+    value_h = max(12, y + h - pad // 2 - value_y)
 
     z.text(
         x + pad,
-        y + pad // 2 + label_offset,
+        label_y,
         inner_w,
         label_h,
         label,
@@ -357,24 +362,17 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # Tabela 2x2: LOTE DE FABRICAÇÃO | DATA/VAL // QUANTIDADE | OPERADOR
     col_w = table_w // 2
     row_h = top_h // 2
-    grid_thickness = max(2, mmw(0.0028))
+    grid_thickness = max(3, mmw(0.0028))
+    z.line_v(table_x0, cy0, top_h, grid_thickness)
     z.line_v(table_x0 + col_w, cy0, top_h, grid_thickness)
     z.line_h(table_x0, cy0 + row_h, table_w, grid_thickness)
 
-    top_value_offset = max(7, row_h // 7)
-    top_label_offset = max(2, row_h // 18)
-    lot_label_offset = top_label_offset + max(2, row_h // 22)
     lot_parts = str(data.get("lote_base") or "").split("/", 1)
     lot_top = "/".join(reversed(lot_parts))
-    lot_bottom = lot_parts[0] if len(lot_parts) > 1 else ""
     _stat_cell(z, table_x0, cy0, col_w, row_h, pad,
                "LOTE DE FABRICAÇÃO", lot_top,
                label_font=20, value_font=42,
-               label_align="C", value_align="C",
-               secondary_value="", secondary_font=42,
-               primary_ratio=0.50,
-               label_offset=lot_label_offset,
-               value_offset=max(0, top_value_offset - 6))
+               label_align="C", value_align="C")
 
     date_col_x = table_x0 + col_w
     sub_h = row_h // 2
@@ -383,7 +381,7 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
                  col_w - 2 * pad, sub_h - pad // 2,
                  "DATA ", display_date(data.get("fabricacao")),
                  label_font=27, value_font=33, label_ratio=0.40)
-    z.line_h(date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, max(1, mmw(0.0018)))
+    z.line_h(date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, grid_thickness)
     _inline_pair(z, date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, sub_h - pad // 2,
                  "VAL: ", display_month_year(data.get("validade")),
                  label_font=27, value_font=38, label_ratio=0.40)
@@ -392,24 +390,22 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     qty_unit = str(data.get("unidade") or "")
     _stat_cell(z, table_x0, cy0 + row_h, col_w, top_h - row_h, pad,
                "QUANTIDADE", f"{qty_text} {qty_unit}".strip(), value_font=50, label_font=23,
-               label_align="C", value_align="C",
-               secondary_value="", secondary_font=30,
-               label_offset=top_label_offset + 4,
-               value_offset=max(0, top_value_offset - 6))
+               label_align="C", value_align="C")
     _stat_cell(z, date_col_x, cy0 + row_h, col_w, top_h - row_h, pad,
                "OPERADOR", str(data.get("operador") or ""), value_font=50, label_font=23,
                label_align="C", value_align="C",
-               wrap_value=True,
-               label_offset=top_label_offset,
-               value_offset=top_value_offset)
+               wrap_value=True)
 
     # Separador entre a linha superior e o título
     z.line_h(cx0, cy0 + top_h, cw, border)
 
     # --- Título (descrição do produto) -----------------------------------------------
     title_y = cy0 + top_h
-    z.text(cx0 + pad, title_y, cw - 2 * pad, title_h, str(data.get("descricao") or ""),
-           max_font=min(mmw(0.075), title_h - 4), min_font=22, align="L")
+    title_gap = max(4, mmh(0.01))
+    title_inner_y = title_y + border + title_gap
+    title_inner_h = max(1, title_h - border - 2 * title_gap)
+    z.text(cx0 + pad, title_inner_y, cw - 2 * pad, title_inner_h, str(data.get("descricao") or ""),
+           max_font=min(mmw(0.075), title_inner_h), min_font=min(22, title_inner_h), align="C")
     z.line_h(cx0, title_y + title_h, cw, border)
 
     # --- Linha COD / COD PROD -----------------------------------------------------
@@ -431,14 +427,20 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     medidas_w = int(cw * 0.39) if observacao else cw - logo_w
     obs_x = cx0 + medidas_w + logo_w
     obs_w = cw - medidas_w - logo_w
-    if observacao:
-        _stat_cell(z, cx0, bottom_y, medidas_w, bottom_h, pad,
-                   "MEDIDAS:", str(data.get("medidas") or ""),
-                   label_font=18, value_font=26)
-    else:
-        _inline_pair(z, cx0 + pad, bottom_y, medidas_w - 2 * pad, bottom_h,
-                     "MEDIDAS: ", str(data.get("medidas") or ""),
-                     label_ratio=0.30, value_font=44, label_font=24)
+    # O rodapé usa margens menores que as células grandes do topo, para
+    # aproveitar sua altura sem diminuir excessivamente as medidas e a logo.
+    footer_pad_x = max(6, mmw(0.01))
+    footer_pad_y = max(4, mmh(0.0125))
+    footer_top = bottom_y + border + footer_pad_y
+    footer_bottom = bottom_y + bottom_h - footer_pad_y
+    measures_label_h = max(16, int(bottom_h * 0.25))
+    measures_value_y = footer_top + measures_label_h + 4
+    measures_inner_w = medidas_w - border - 2 * footer_pad_x
+    z.text(cx0 + footer_pad_x, footer_top, measures_inner_w, measures_label_h,
+           "MEDIDAS:", max_font=22, min_font=12)
+    z.text(cx0 + footer_pad_x, measures_value_y, measures_inner_w,
+           max(12, footer_bottom - measures_value_y), str(data.get("medidas") or ""),
+           max_font=40, min_font=12, width_ratio=0.8)
     z.line_v(cx0 + medidas_w, bottom_y, bottom_h, border)
     if observacao:
         z.line_v(obs_x, bottom_y, bottom_h, border)
@@ -446,14 +448,15 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
                    "OBSERVAÇÃO:", observacao,
                    label_font=16, value_font=18, wrap_value=True)
     logo_x0 = cx0 + medidas_w
-    logo_target_w = max(10, logo_w - 2 * max(8, pad))
+    logo_target_w = max(10, logo_w - border - 2 * footer_pad_x)
+    logo_target_h = max(1, footer_bottom - footer_top)
     logo_w_px, logo_h_px, logo_bpr, logo_data = _logo_gfa_data(logo_target_w)
-    if logo_w_px and logo_h_px and logo_h_px > bottom_h - 2 * pad:
-        scale = (bottom_h - 2 * pad) / logo_h_px
+    if logo_w_px and logo_h_px and logo_h_px > logo_target_h:
+        scale = logo_target_h / logo_h_px
         logo_w_px, logo_h_px, logo_bpr, logo_data = _logo_gfa_data(max(10, int(logo_target_w * scale)))
     if logo_w_px and logo_data:
         logo_x = logo_x0 + max(0, (logo_w - logo_w_px) // 2)
-        logo_y = bottom_y + max(0, (bottom_h - logo_h_px) // 2)
+        logo_y = footer_top + max(0, (logo_target_h - logo_h_px) // 2)
         total_bytes = logo_bpr * logo_h_px
         z.raw(f"^FO{logo_x},{logo_y}^GFA,{total_bytes},{total_bytes},{logo_bpr},{logo_data}^FS")
 
