@@ -1642,6 +1642,10 @@ button.print {
 .printGroup {
     display: flex;
 
+    visibility: visible;
+
+    opacity: 1;
+
     align-items: end;
 
     gap: 8px;
@@ -1677,6 +1681,26 @@ button.print {
     color: #9a3412;
 
     border: 1px solid #fdba74;
+}
+
+.zebraButton {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 170px;
+
+    padding: 10px 16px;
+
+    font-weight: 800;
+
+    letter-spacing: .02em;
+
+    visibility: visible;
+
+    opacity: 1;
 }
 
 .smallButton {
