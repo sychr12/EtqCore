@@ -261,6 +261,8 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(file_path, external / "2026" / "08" / f"etiquetas-2026-08-{datetime.now().day:02d}.xlsx")
 
     def test_generation_reserves_unique_counters_and_returns_zpl(self) -> None:
+        from services.qrcode_service import render_bitmap
+
         with TemporaryDirectory() as directory:
             old_data_dir, old_db_path, old_backup_dir = (
                 database.DATA_DIR,
@@ -273,17 +275,18 @@ class ApiTests(unittest.TestCase):
                 database.BACKUP_DIR = Path(directory) / "backups"
                 database.init_db()
 
-                response = self.client.post(
-                    "/api/gerar",
-                    json={
-                        **VALID_LABEL,
-                        "cliente": "AMAZONTAPE",
-                        "descricao": "TUBETE AÇÃO ÇÃ",
-                        "observacao": "Separar para inspeção",
-                        "destino": "download",
-                        "quantidade_etiquetas": 2,
-                    },
-                )
+                with patch("services.zpl.render_bitmap", wraps=render_bitmap) as renderer:
+                    response = self.client.post(
+                        "/api/gerar",
+                        json={
+                            **VALID_LABEL,
+                            "cliente": "AMAZONTAPE",
+                            "descricao": "TUBETE AÇÃO ÇÃ",
+                            "observacao": "Separar para inspeção",
+                            "destino": "download",
+                            "quantidade_etiquetas": 2,
+                        },
+                    )
                 payload = response.get_json()
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(payload["quantidade"], 2)
@@ -297,14 +300,19 @@ class ApiTests(unittest.TestCase):
                 self.assertIn("~SD10", payload["zpl"])
                 self.assertIn("^PW800", payload["zpl"])
                 self.assertIn("^LL480", payload["zpl"])
-                self.assertIn("^BQN,2,4", payload["zpl"])
+                self.assertEqual(payload["zpl"].count("^FXQR^FS"), 2)
                 self.assertIn("TUBETE AÇÃO ÇÃ", payload["zpl"])
                 self.assertIn("^GFA", payload["zpl"])
                 # Tipo e lote de controle permanecem no QR, mas não são
                 # desenhados como textos/blocos visuais na etiqueta.
-                self.assertIn("(T)CAPA", payload["zpl"])
-                self.assertIn("(S)BC", payload["zpl"])
-                self.assertNotIn("(O)Separar para inspeção", payload["zpl"])
+                self.assertEqual(renderer.call_count, 2)
+                for index, render_call in enumerate(renderer.call_args_list, start=1):
+                    qr_text, size = render_call.args
+                    self.assertIn("(T)CAPA", qr_text)
+                    self.assertIn("(S)BC", qr_text)
+                    self.assertIn(f"(I)TB{index:010d}", qr_text)
+                    self.assertNotIn("Separar para inspeção", qr_text)
+                    self.assertEqual(size, 202)
                 self.assertIn("^FDSeparar para inspeção^FS", payload["zpl"])
                 self.assertIn("^FDOBSERVAÇÃO:^FS", payload["zpl"])
                 self.assertIn("Separar para inspeção", payload["zpl"])

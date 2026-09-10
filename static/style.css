@@ -693,12 +693,12 @@ button.print {
 .label .qr img {
     display: block;
 
-    width: 96%;
-    height: 96%;
-    max-width: 96%;
-    margin: 2%;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    margin: 0;
 
-    object-fit: contain;
+    object-fit: cover;
 
     image-rendering: pixelated;
 }
@@ -3891,7 +3891,7 @@ nav.workspaceNav {
 .label .bottomRow > .medidas { padding: .8cqh .9cqw; gap: .5cqw; }
 .label .bottomRow .medIcon { width: 3.8cqw; height: 8cqh; }
 .label .bottomRow .medLabel { font-size: 2.5cqw; }
-.label .bottomRow .medValue { font-size: 4.5cqw; margin-top: 1cqh; }
+.label .bottomRow .medValue { font-size: 4.8cqw; margin-top: 1cqh; font-weight: 900; }
 .label .bottomRow > .observationBox { min-width: 0; gap: 1cqh; }
 .label .bottomRow .observationLabel { font-size: 1.65cqw; }
 .label .bottomRow .observationValue { font-size: 1.7cqw; line-height: 1.2; overflow-wrap: anywhere; }

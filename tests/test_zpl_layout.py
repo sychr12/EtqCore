@@ -3,8 +3,9 @@ from __future__ import annotations
 import re
 import unittest
 from dataclasses import dataclass
+from unittest.mock import patch
 
-from services.qrcode_service import qr_payload
+from services.qrcode_service import qr_payload, render_bitmap
 from services.zpl import make_zpl
 
 
@@ -39,7 +40,7 @@ class TextField:
         return self.y + self.height * self.lines + self.gap * (self.lines - 1)
 
 
-def text_fields(zpl: str) -> list[TextField]:
+def raw_text_fields(zpl: str) -> list[TextField]:
     pattern = (
         r"\^FO(\d+),(\d+)\^A0N,(\d+),\d+"
         r"\^FB(\d+),(\d+),(-?\d+),([LCRJ]),0\^FD([^\^]*)\^FS"
@@ -48,6 +49,24 @@ def text_fields(zpl: str) -> list[TextField]:
         TextField(*(int(value) for value in match[:6]), match[6], match[7])
         for match in re.findall(pattern, zpl)
     ]
+
+
+def text_fields(zpl: str) -> list[TextField]:
+    """Agrupa somente as sobreimpressões consecutivas do mesmo campo."""
+    result: list[TextField] = []
+    for field in raw_text_fields(zpl):
+        if result:
+            previous = result[-1]
+            if (
+                0 < field.x - previous.x <= 2
+                and (field.y, field.height, field.width, field.lines, field.gap,
+                     field.alignment, field.value)
+                == (previous.y, previous.height, previous.width, previous.lines,
+                    previous.gap, previous.alignment, previous.value)
+            ):
+                continue
+        result.append(field)
+    return result
 
 
 def boxes(zpl: str) -> list[tuple[int, int, int, int, int]]:
@@ -80,17 +99,17 @@ class ZebraLayoutTests(unittest.TestCase):
                 self.assertEqual(width, thickness)
                 self.assertGreaterEqual(thickness, 3)
 
-    def test_product_title_is_centered_with_clearance_from_both_rules(self) -> None:
+    def test_product_title_is_left_aligned_and_lowered_without_touching_rules(self) -> None:
         for data, zpl in self.variants():
             with self.subTest(client=data["cliente"], observation=data["observacao"]):
                 title = self.field(zpl, data["descricao"])
                 rules = {box[1]: box for box in boxes(zpl) if box[0] == 28 and box[2] > box[3]}
                 upper, lower = rules[232], rules[292]
-                self.assertGreaterEqual(title.y - (upper[1] + upper[3]), 4)
+                self.assertGreaterEqual(title.y - (upper[1] + upper[3]), 8)
                 self.assertGreaterEqual(lower[1] - title.bottom, 4)
-                self.assertEqual(title.alignment, "C")
-                # O bloco de texto tem margens laterais iguais dentro da faixa.
-                self.assertEqual(title.x - upper[0], upper[0] + upper[2] - title.x - title.width)
+                self.assertEqual(title.alignment, "L")
+                self.assertLessEqual(title.x - upper[0], 20)
+                self.assertGreaterEqual(title.height, 40)
 
     def test_codes_and_operator_keep_clearance_from_cell_borders(self) -> None:
         for data, zpl in self.variants():
@@ -100,7 +119,8 @@ class ZebraLayoutTests(unittest.TestCase):
                 self.assertEqual(len(codes), 2)
                 for code in codes:
                     self.assertGreaterEqual(code.y - 296, 4)
-                    self.assertGreaterEqual(368 - code.bottom, 8)
+                    self.assertGreaterEqual(368 - code.bottom, 4)
+                    self.assertGreaterEqual(code.height, 43)
                 operator = self.field(zpl, data["operador"])
                 self.assertGreaterEqual(operator.y - 133, 4)
                 self.assertGreaterEqual(232 - operator.bottom, 8)
@@ -121,6 +141,37 @@ class ZebraLayoutTests(unittest.TestCase):
                 self.assertGreaterEqual(quantity.y - quantity_label.bottom, 4)
                 self.assertGreaterEqual(operator.y - operator_label.bottom, 4)
 
+    def test_requested_text_is_bold_without_creating_extra_values(self) -> None:
+        for data, zpl in self.variants():
+            with self.subTest(client=data["cliente"], observation=data["observacao"]):
+                raw_fields = raw_text_fields(zpl)
+                values = {
+                    data["descricao"], data["produto_codigo"], data["cod_prod"],
+                    "COD:", "COD PROD:", "MEDIDAS:", data["medidas"],
+                }
+                for field in text_fields(zpl):
+                    if field.value not in values:
+                        continue
+                    copies = [
+                        candidate for candidate in raw_fields
+                        if candidate.value == field.value and candidate.y == field.y
+                        and field.x <= candidate.x <= field.x + 2
+                    ]
+                    self.assertEqual([copy.x - field.x for copy in copies], [0, 1, 2])
+                    self.assertTrue(all(copy.height == field.height for copy in copies))
+
+    def test_brand_reads_from_bottom_to_top_inside_its_strip(self) -> None:
+        data = {**LABEL, "cliente": "AMAZONTAPE"}
+        zpl = make_zpl(data, 3, IDENTIFIER, qr_payload(data, IDENTIFIER), SETTINGS)
+        fields = re.findall(r"\^FO(\d+),(\d+)\^FR\^A0B,(\d+),(\d+)\^FDAMAZONTAPE\^FS", zpl)
+        self.assertTrue(fields, "A marca deve usar a rotação inferior-para-superior (^A0B).")
+        for x, y, height, width in fields:
+            self.assertGreaterEqual(int(x), 700)
+            self.assertLessEqual(int(x) + int(height), 772)
+            self.assertGreaterEqual(int(y), 28)
+            self.assertLessEqual(int(y), 452)
+        self.assertNotIn("^A0R,", zpl)
+
     def test_layout_changes_preserve_the_exact_requested_qr_payload(self) -> None:
         expected = (
             "(E)04(T)2(P)2000000110(D)TUBETE ADELBRAS 48MMX3X2,5MM"
@@ -135,9 +186,10 @@ class ZebraLayoutTests(unittest.TestCase):
                 }
                 payload = qr_payload(data, IDENTIFIER)
                 self.assertEqual(payload, expected)
-                zpl = make_zpl(data, 3, IDENTIFIER, payload, SETTINGS)
-                qr_fields = re.findall(r"\^BQN,2,\d+\^FDLA,([^\^]*)\^FS", zpl)
-                self.assertEqual(qr_fields, [expected])
+                with patch("services.zpl.render_bitmap", wraps=render_bitmap) as renderer:
+                    zpl = make_zpl(data, 3, IDENTIFIER, payload, SETTINGS)
+                renderer.assert_called_once_with(expected, 202)
+                self.assertIn("^FXQR^FS", zpl)
 
 
 if __name__ == "__main__":

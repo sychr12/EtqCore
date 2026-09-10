@@ -1,12 +1,44 @@
+# Python / ambiente local
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+env/
+.ENV/
+.env
+.env.*
+
+# Testes / cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Banco e dados locais
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite3
 dados/backups/
-.pytest_cache/
-.coverage
-htmlcov/
-.venv/
-venv/
+dados/*.db
+
+# Arquivos temporários / locais
+.temp/
+tmp/
+temp/
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 

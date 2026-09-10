@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image
-from reportlab.graphics.barcode.qr import QrCodeWidget
+from PIL import Image, ImageOps
 
 from .texto import dots, zpl_text, display_date, display_month_year
+from .qrcode_service import render_bitmap
 
 # ---------------------------------------------------------------------------
 # Este arquivo desenha a etiqueta em ZPL reproduzindo, com comandos gráficos
@@ -83,6 +83,11 @@ class _Zpl:
     def raw(self, cmd: str) -> None:
         self.lines.append(cmd)
 
+    def bitmap(self, x: int, y: int, image: Image.Image) -> None:
+        packed = ImageOps.invert(image.convert("L")).convert("1").tobytes()
+        bytes_per_row = (image.width + 7) // 8
+        self.raw(f"^FO{x},{y}^GFA,{len(packed)},{len(packed)},{bytes_per_row},{packed.hex().upper()}^FS")
+
     def box_border(self, x: int, y: int, w: int, h: int, thickness: int) -> None:
         """Retângulo apenas com borda (sem preenchimento)."""
         self.lines.append(f"^FO{x},{y}^GB{w},{h},{thickness},B,0^FS")
@@ -104,16 +109,22 @@ class _Zpl:
         text: str, max_font: int, min_font: int,
         align: str = "L", reverse: bool = False,
         width_ratio: float = 1.0,
+        bold: bool = False,
     ) -> None:
         """Escreve `text` em uma linha, centralizado verticalmente dentro
         da caixa (x,y,w,h), com a fonte encolhendo até caber."""
-        font = _fit_font(text, int(w / width_ratio), h, max_font, min_font)
+        stroke = 2 if bold and not reverse else 0
+        inner_w = max(1, w - stroke)
+        font = _fit_font(text, int(inner_w / width_ratio), h, max_font, min_font)
         font_width = max(1, int(font * width_ratio))
         ty = y + max(0, (h - font) // 2)
         reverse_cmd = "^FR" if reverse else ""
-        self.lines.append(
-            f"^FO{x},{ty}{reverse_cmd}^A0N,{font},{font_width}^FB{max(1, w)},1,0,{align},0^FD{zpl_text(text)}^FS"
-        )
+        # Reforça somente os textos solicitados, sem alterar a tonalidade
+        # da impressora ou os módulos do QR. Reserva a largura da sobreposição.
+        for offset in range(stroke + 1):
+            self.lines.append(
+                f"^FO{x + offset},{ty}{reverse_cmd}^A0N,{font},{font_width}^FB{inner_w},1,0,{align},0^FD{zpl_text(text)}^FS"
+            )
 
     def text_wrapped(
         self, x: int, y: int, w: int, h: int, text: str,
@@ -155,6 +166,8 @@ def _stat_cell(
     secondary_font: int = 24,
     primary_ratio: float = 0.62,
     wrap_value: bool = False,
+    label_ratio: float = 0.31,
+    bold: bool = False,
 ) -> None:
     """Célula com margem de segurança e fonte ajustada à largura/altura."""
     w = max(1, int(w))
@@ -162,7 +175,7 @@ def _stat_cell(
     pad = max(6, int(pad))
 
     inner_w = max(1, w - 2 * pad)
-    label_h = max(16, int(h * 0.31))
+    label_h = max(16, int(h * label_ratio))
     label_offset = max(0, int(label_offset))
     value_offset = max(0, int(value_offset))
     label_y = y + pad // 2 + label_offset
@@ -180,6 +193,7 @@ def _stat_cell(
         max_font=min(label_font, label_h - 2),
         min_font=10,
         align=label_align,
+        bold=bold,
     )
 
     if secondary_value:
@@ -189,6 +203,7 @@ def _stat_cell(
             x + pad, value_y, inner_w, primary_h, value,
             max_font=min(value_font, primary_h - 2), min_font=12,
             align=value_align,
+            bold=bold,
         )
         z.text(
             x + pad, value_y + primary_h, inner_w, secondary_h,
@@ -212,6 +227,7 @@ def _stat_cell(
             max_font=min(value_font, value_h - 2),
             min_font=12,
             align=value_align,
+            bold=bold,
         )
 
 
@@ -329,14 +345,14 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # Moldura externa
     z.box_border(fx0, fy0, fw, fh, border)
 
-    # Faixa preta lateral (cliente/marca), texto girado lendo de cima para baixo
+    # Faixa preta lateral: leitura de baixo para cima, como na prévia.
     if cliente:
         z.box_filled(brand_x0, cy0, brand_w, ch)
         brand_font = _fit_font(cliente, ch, brand_w - 4, max_font=min(mmw(0.05), brand_w - 4), min_font=14)
         text_len = len(cliente) * brand_font * 0.62
         by = cy0 + max(0, int((ch - text_len) / 2))
         bx = brand_x0 + max(0, int((brand_w - brand_font) / 2))
-        z.raw(f"^FO{bx},{by}^FR^A0R,{brand_font},{brand_font}^FD{cliente}^FS")
+        z.raw(f"^FO{bx},{by}^FR^A0B,{brand_font},{brand_font}^FD{cliente}^FS")
 
     # --- Linha superior: QR + tabela 2x2 --------------------------------------------
     # Tipo e lote de controle pertencem somente ao conteúdo do QR Code.
@@ -344,20 +360,28 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     table_x0 = cx0 + qr_w
     table_w = cw - qr_w
 
-    # QR code nativo da Zebra, centralizado dentro do quadrado qr_w x top_h,
-    # com folga (pad) em todos os lados para não encostar na tabela ou na moldura.
-    qr_widget = QrCodeWidget(qr)
-    # O ReportLab só calcula a quantidade real de módulos ao preparar os
-    # limites. Sem isto, moduleCount fica zero e gera ampliação inválida.
-    qr_widget.getBounds()
-    module_count = qr_widget.qr.moduleCount
-    qr_area = max(10, min(qr_w, top_h) - 2)
-    # ^BQN da ZD220 aceita magnificação de 1 a 10.
-    qr_mag = max(1, min(10, qr_area // max(1, module_count + 8)))
-    qr_size = qr_mag * (module_count + 8)
-    qr_x = cx0 + max(0, (qr_w - qr_size) // 2)
-    qr_y = cy0 + max(0, (top_h - qr_size) // 2)
-    z.raw(f"^FO{qr_x},{qr_y}^BQN,2,{qr_mag}^FDLA,{qr}^FS")
+    # O QR ocupa TODO o quadrado disponível.
+    # O render_bitmap pode gerar uma margem branca (quiet zone); recortamos
+    # essa margem e redimensionamos novamente para preencher a área inteira.
+    # Reduz o QR levemente (96% da área), mantendo-o centralizado.
+    qr_area = min(qr_w, top_h)
+    qr_size = max(1, int(qr_area * 0.96))
+    qr_x = cx0 + (qr_w - qr_size) // 2
+    qr_y = cy0 + (top_h - qr_size) // 2
+
+    qr_img = render_bitmap(qr, qr_size).convert("L")
+
+    # Remove somente a borda branca externa criada pelo gerador do QR.
+    inverted = ImageOps.invert(qr_img)
+    bbox = inverted.getbbox()
+    if bbox:
+        qr_img = qr_img.crop(bbox)
+
+    # NEAREST mantém os módulos do QR perfeitamente quadrados/nítidos.
+    qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.NEAREST)
+
+    z.raw("^FXQR^FS")
+    z.bitmap(qr_x, qr_y, qr_img)
 
     # Tabela 2x2: LOTE DE FABRICAÇÃO | DATA/VAL // QUANTIDADE | OPERADOR
     col_w = table_w // 2
@@ -401,23 +425,36 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
 
     # --- Título (descrição do produto) -----------------------------------------------
     title_y = cy0 + top_h
-    title_gap = max(4, mmh(0.01))
-    title_inner_y = title_y + border + title_gap
-    title_inner_h = max(1, title_h - border - 2 * title_gap)
-    z.text(cx0 + pad, title_inner_y, cw - 2 * pad, title_inner_h, str(data.get("descricao") or ""),
-           max_font=min(mmw(0.075), title_inner_h), min_font=min(22, title_inner_h), align="C")
+    # Aproveita praticamente toda a altura da faixa para a descrição.
+    # Mantém apenas uma pequena folga das linhas superior e inferior.
+    title_gap = max(2, mmh(0.004))
+    # Desce a descrição só um pouco para afastá-la da linha superior.
+    title_drop = max(8, mmh(0.016))
+    title_inner_y = title_y + border + title_gap + title_drop
+    # Mantém altura suficiente para a fonte ficar grande mesmo com o pequeno deslocamento.
+    title_inner_h = max(1, title_h - border - title_gap - title_drop)
+    # Descrição do produto (ex.: TUBETE ALTEBRAS):
+    # usa a maior fonte possível dentro da faixa e fica centralizada.
+    title_pad = max(4, mmw(0.005))
+    z.text(cx0 + title_pad, title_inner_y, cw - 2 * title_pad, title_inner_h, str(data.get("descricao") or ""),
+           max_font=title_inner_h, min_font=min(22, title_inner_h), align="C", bold=True)
     z.line_h(cx0, title_y + title_h, cw, border)
 
     # --- Linha COD / COD PROD -----------------------------------------------------
     cod_y = title_y + title_h
     cod_main_w = int(cw * 0.48)
-    _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, pad,
+    # Recuo horizontal maior para afastar COD/COD PROD da linha vertical esquerda.
+    # Não altera o tamanho da fonte.
+    code_pad = max(10, mmw(0.012))
+    _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, code_pad,
                "COD:", str(data.get("produto_codigo") or ""),
-               label_font=18, value_font=44, value_offset=pad // 2)
+               label_font=38, value_font=78, label_ratio=0.24,
+               label_offset=4, value_offset=3, bold=False)
     z.line_v(cx0 + cod_main_w, cod_y, cod_h, border)
-    _stat_cell(z, cx0 + cod_main_w, cod_y, cw - cod_main_w, cod_h, pad,
+    _stat_cell(z, cx0 + cod_main_w, cod_y, cw - cod_main_w, cod_h, code_pad,
                "COD PROD:", str(data.get("cod_prod") or ""),
-               label_font=18, value_font=44, value_offset=pad // 2)
+               label_font=38, value_font=78, label_ratio=0.24,
+               label_offset=4, value_offset=3, bold=False)
     z.line_h(cx0, cod_y + cod_h, cw, border)
 
     # --- Linha inferior: MEDIDAS/OBSERVAÇÃO + logo -----------------------------------
@@ -436,17 +473,65 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     measures_label_h = max(16, int(bottom_h * 0.25))
     measures_value_y = footer_top + measures_label_h + 4
     measures_inner_w = medidas_w - border - 2 * footer_pad_x
-    z.text(cx0 + footer_pad_x, footer_top, measures_inner_w, measures_label_h,
-           "MEDIDAS:", max_font=22, min_font=12)
-    z.text(cx0 + footer_pad_x, measures_value_y, measures_inner_w,
+    # Ícone simples de "tubete" à esquerda, como na referência.
+    icon_w = max(10, mmw(0.016))
+    icon_h = max(18, int((footer_bottom - footer_top) * 0.36))
+    icon_x = cx0 + footer_pad_x
+    icon_y = footer_top + max(0, (footer_bottom - footer_top - icon_h) // 2)
+    icon_th = max(2, border // 2)
+
+    # Corpo do ícone e pequena aba lateral.
+    z.box_border(icon_x + 4, icon_y, icon_w, icon_h, icon_th)
+    z.line_v(icon_x, icon_y + max(2, icon_h // 5),
+             max(4, icon_h - 2 * max(2, icon_h // 5)), icon_th)
+
+    measures_text_x = icon_x + icon_w + max(12, mmw(0.018))
+    measures_text_w = max(1, cx0 + medidas_w - footer_pad_x - measures_text_x)
+
+    z.text(measures_text_x, footer_top, measures_text_w, measures_label_h,
+           "MEDIDAS:", max_font=24, min_font=12, bold=False)
+
+    z.text(measures_text_x, measures_value_y, measures_text_w,
            max(12, footer_bottom - measures_value_y), str(data.get("medidas") or ""),
-           max_font=40, min_font=12, width_ratio=0.8)
+           max_font=42, min_font=14, width_ratio=0.72, bold=False)
     z.line_v(cx0 + medidas_w, bottom_y, bottom_h, border)
     if observacao:
         z.line_v(obs_x, bottom_y, bottom_h, border)
-        _stat_cell(z, obs_x, bottom_y, obs_w, bottom_h, pad,
-                   "OBSERVAÇÃO:", observacao,
-                   label_font=16, value_font=18, wrap_value=True)
+
+        # Aproxima o texto da observação do título "OBSERVAÇÃO:".
+        obs_pad = max(8, pad // 2)
+        # Deixa o conteúdo da observação logo abaixo do título,
+        # evitando que fique centralizado muito para baixo no campo.
+        # Dá uma margem maior da linha superior e aproxima o conteúdo do título.
+        obs_top_margin = max(8, mmh(0.012))
+        obs_label_h = max(18, int(bottom_h * 0.22))
+        obs_label_y = bottom_y + border + obs_top_margin
+        obs_value_y = obs_label_y + max(12, obs_label_h - 5)
+        obs_bottom_margin = max(4, obs_pad // 2)
+
+        z.text(
+            obs_x + obs_pad, obs_label_y,
+            max(1, obs_w - 2 * obs_pad), obs_label_h,
+            "OBSERVAÇÃO:",
+            max_font=18, min_font=13,
+            align="L"
+        )
+
+        # Mantém o texto da observação colado ao título, sem centralizar
+        # verticalmente em toda a altura restante do campo.
+        obs_value_h = min(
+            max(28, bottom_y + bottom_h - obs_bottom_margin - obs_value_y),
+            48
+        )
+
+        z.text_wrapped(
+            obs_x + obs_pad, obs_value_y,
+            max(1, obs_w - 2 * obs_pad),
+            obs_value_h,
+            observacao,
+            max_font=22, min_font=15,
+            align="L"
+        )
     logo_x0 = cx0 + medidas_w
     logo_target_w = max(10, logo_w - border - 2 * footer_pad_x)
     logo_target_h = max(1, footer_bottom - footer_top)
