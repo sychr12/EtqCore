@@ -83,9 +83,9 @@
                 <div class="editorSectionHeading"><span>01</span><div><h3>Produto e identificação</h3><p>Informações principais exibidas na etiqueta.</p></div></div>
                 <div class="editorSectionFields">
               <div>
-                <label for="qrBranch">Filial (E)</label>
-                <input id="qrBranch" value="" readonly aria-describedby="qrBranchHint" />
-                <small id="qrBranchHint">Usada no início do QR Code. Altere em Configurações.</small>
+                <label for="qrBranch">Código do estabelecimento (E)</label>
+                <input id="qrBranch" name="filial" value="" maxlength="10" aria-describedby="qrBranchHint" />
+                <small id="qrBranchHint">Preenchido inicialmente com a filial das Configurações.</small>
               </div>
               <div>
                 <label for="qrIdentifier">Identificador (I) — automático</label>
@@ -103,7 +103,7 @@
               </div>
 
               <div>
-                <label>Tipo (T) — opcional</label>
+                <label>Tipo do material (T) — opcional</label>
                 <input
                   name="tipo"
                   value=""
@@ -146,7 +146,7 @@
                 <div class="editorSectionFields">
 
               <div>
-                <label>Lote de controle / selo (S) *</label>
+                <label>Sequência / selo (S) *</label>
                 <input
                   name="lote_controle"
                   value="BC"
@@ -156,7 +156,7 @@
               </div>
 
               <div>
-                <label>Lote de fabricação (L)</label>
+                <label>Lote ou data (L)</label>
                 <input
                   name="lote_base"
                   value="12/12/2026"
@@ -223,7 +223,7 @@
               </div>
 
               <div>
-                <label>DPD (Y) — só no QR</label>
+                <label>DPD / rastreabilidade adicional (Y) — só no QR</label>
                 <input name="dpd" />
               </div>
 
@@ -239,6 +239,7 @@
               </section>
             </form>
 
+            <div id="qrFeedback" class="status" aria-live="polite"></div>
             <div class="editorFinishPanel">
             <div class="editorActionsHeading"><span>FINALIZAÇÃO</span><h3>Salvar, conferir ou imprimir</h3><p>Escolha uma ação para concluir a etiqueta.</p></div>
             <div class="actions projectActions">
@@ -343,7 +344,7 @@
                           <span class="cellLabel">VAL:&nbsp;</span>
                           <span
                             class="cellValue"
-                            data-out-valmes="validade"
+                            data-out-date="validade"
                           ></span>
                         </div>
                       </div>
@@ -834,7 +835,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=34"
+      src="/static/app.js?v=36"
       defer
     ></script>
   </body>

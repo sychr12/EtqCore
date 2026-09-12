@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
-from .texto import dots, zpl_text, display_date, display_month_year
+from .texto import dots, zpl_text, display_date
 from .qrcode_service import render_bitmap
 
 # ---------------------------------------------------------------------------
@@ -406,8 +406,8 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
                  label_font=27, value_font=33, label_ratio=0.40)
     z.line_h(date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, grid_thickness)
     _inline_pair(z, date_col_x + pad, cy0 + sub_h, col_w - 2 * pad, sub_h - pad // 2,
-                 "VAL: ", display_month_year(data.get("validade")),
-                 label_font=27, value_font=38, label_ratio=0.40)
+                 "VAL: ", display_date(data.get("validade")),
+                 label_font=27, value_font=33, label_ratio=0.40)
 
     qty_text = str(data.get("quantidade") or "")
     qty_unit = str(data.get("unidade") or "")

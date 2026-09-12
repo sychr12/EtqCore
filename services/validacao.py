@@ -6,11 +6,12 @@ import math
 
 from config import REPORTS_DIR
 
-from .texto import clean
+from .texto import clean, qr_text
 
 
 # Limites evitam textos enormes e trabalhos ZPL inválidos.
 LABEL_LIMITS = {
+    "filial": 10,
     "cliente": 80,
     "oc": 80,
     "tipo": 40,
@@ -29,6 +30,11 @@ LABEL_LIMITS = {
     "observacao": 300,
 }
 
+QR_LABEL_FIELDS = {
+    "filial", "tipo", "produto_codigo", "descricao", "medidas",
+    "lote_controle", "quantidade", "dpd", "unidade", "lote_base",
+}
+
 REQUIRED_LABEL_FIELDS = {
     "produto_codigo": "código do produto",
     "descricao": "descrição",
@@ -42,12 +48,21 @@ def validate_label(body: object) -> dict[str, str]:
     """Limpa os campos, confere obrigatórios e valida a quantidade."""
     if not isinstance(body, dict):
         raise ValueError("Envie os dados da etiqueta em formato JSON válido.")
-    result = {key: clean(body.get(key)) for key in LABEL_LIMITS}
+    result = {}
+    for key in LABEL_LIMITS:
+        # Arquivos antigos usam a filial das configurações. Uma filial
+        # explicitamente vazia, por outro lado, deve produzir o marcador (E).
+        if key == "filial" and key not in body:
+            continue
+        try:
+            result[key] = (qr_text if key in QR_LABEL_FIELDS else clean)(body.get(key))
+        except ValueError as exc:
+            raise ValueError(f"Campo {key.replace('_', ' ')}: {exc}") from exc
     for key, label in REQUIRED_LABEL_FIELDS.items():
         if not result[key]:
             raise ValueError(f"Informe {label}.")
     for key, limit in LABEL_LIMITS.items():
-        if len(result[key]) > limit:
+        if len(result.get(key, "")) > limit:
             raise ValueError(f"O campo {key.replace('_', ' ')} aceita no máximo {limit} caracteres.")
     # Também valida a conversão usada no QR antes de reservar um contador.
     from .texto import quantity_x1000
@@ -84,12 +99,12 @@ def validate_settings(body: object) -> dict[str, str]:
         raise ValueError("A tonalidade deve ficar entre 0 e 30.")
     if not all(math.isfinite(value) and -10 <= value <= 10 for value in (offset_x, offset_y)):
         raise ValueError("Os deslocamentos devem ficar entre -10 e 10 mm.")
-    branch = clean(body.get("filial"))
+    branch = qr_text(body.get("filial"))
     if not branch or len(branch) > 10:
         raise ValueError("Informe uma filial com até 10 caracteres.")
     printer = clean(body.get("impressora"))
     reports_folder = str(body.get("pasta_relatorios") or REPORTS_DIR).strip()
-    prefix = clean(body.get("prefixo_contador")) or "TB"
+    prefix = qr_text(body.get("prefixo_contador")) or "TB"
     if len(prefix) > 8:
         raise ValueError("O prefixo do contador aceita no máximo 8 caracteres.")
     if len(printer) > 260:

@@ -15,6 +15,14 @@ def clean(value: object) -> str:
     return text.strip().replace("^", " ").replace("~", " ")
 
 
+def qr_text(value: object) -> str:
+    """Preserva os caracteres do QR; rejeita controles em vez de trocá-los."""
+    text = "" if value is None else str(value)
+    if any(unicodedata.category(char) in {"Cc", "Cs", "Zl", "Zp"} for char in text):
+        raise ValueError("Os campos do QR Code devem estar em uma única linha, sem quebras ou caracteres de controle.")
+    return text.strip()
+
+
 def zpl_text(value: object) -> str:
     # O ZPL é enviado em UTF-8 (^CI28, ver services/zpl.py e services/impressao.py),
     # então não há necessidade de restringir a um charset como cp850 aqui —

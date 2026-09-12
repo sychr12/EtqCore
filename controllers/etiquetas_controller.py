@@ -245,8 +245,9 @@ def generate():
             "ultimo_identificador": resultado["last_identifier"],
             "quantidade": quantidade,
             "zpl": resultado["combined_zpl"],
+            "qr": resultado["labels"][0]["qr"],
             "etiquetas": [
-                {"id": item["id"], "identificador": item["identificador"],
+                {"id": item["id"], "identificador": item["identificador"], "qr": item["qr"],
                  "qr_svg": render_svg(item["qr"])}
                 for item in resultado["labels"]
             ] if destino == "impressora_comum" else [],
