@@ -14,7 +14,7 @@ from .qrcode_service import render_bitmap
 # (^GB para linhas/caixas, ^FO/^FD/^FB para texto), o mesmo layout mostrado
 # na pré-visualização web (index.html/style.css): moldura preta, QR à
 # esquerda, tabela 2x2 com LOTE DE FABRICAÇÃO, DATA/VAL, QUANTIDADE e
-# OPERADOR, título com a descrição, linha com COD /
+# OPERADOR, título com a descrição, linha com OC /
 # COD PROD, linha com MEDIDAS + logo, e a faixa preta vertical com o nome
 # do cliente na lateral direita.
 # ---------------------------------------------------------------------------
@@ -391,8 +391,7 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     z.line_v(table_x0 + col_w, cy0, top_h, grid_thickness)
     z.line_h(table_x0, cy0 + row_h, table_w, grid_thickness)
 
-    lot_parts = str(data.get("lote_base") or "").split("/", 1)
-    lot_top = "/".join(reversed(lot_parts))
+    lot_top = str(data.get("lote_base") or "")
     _stat_cell(z, table_x0, cy0, col_w, row_h, pad,
                "LOTE DE FABRICAÇÃO", lot_top,
                label_font=20, value_font=42,
@@ -440,14 +439,14 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
            max_font=title_inner_h, min_font=min(22, title_inner_h), align="C", bold=True)
     z.line_h(cx0, title_y + title_h, cw, border)
 
-    # --- Linha COD / COD PROD -----------------------------------------------------
+    # --- Linha OC / COD PROD ------------------------------------------------------
     cod_y = title_y + title_h
     cod_main_w = int(cw * 0.48)
-    # Recuo horizontal maior para afastar COD/COD PROD da linha vertical esquerda.
+    # Recuo horizontal maior para afastar OC/COD PROD da linha vertical esquerda.
     # Não altera o tamanho da fonte.
     code_pad = max(10, mmw(0.012))
     _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, code_pad,
-               "COD:", str(data.get("produto_codigo") or ""),
+               "OC:", str(data.get("oc") or ""),
                label_font=38, value_font=78, label_ratio=0.24,
                label_offset=4, value_offset=3, bold=False)
     z.line_v(cx0 + cod_main_w, cod_y, cod_h, border)

@@ -15,6 +15,7 @@ SETTINGS = {
     "deslocamento_x_mm": "0", "deslocamento_y_mm": "0",
 }
 LABEL = {
+    "oc": "OC-12345",
     "tipo": "2", "produto_codigo": "2000000444", "cod_prod": "2000000444",
     "descricao": "TUBETE ADELBRAS 711", "lote_controle": "0812/2026",
     "lote_base": "4016/2026", "quantidade": "910", "unidade": "pcs",
@@ -115,8 +116,8 @@ class ZebraLayoutTests(unittest.TestCase):
         for data, zpl in self.variants():
             with self.subTest(client=data["cliente"], observation=data["observacao"]):
                 fields = text_fields(zpl)
-                codes = [field for field in fields if field.value == data["produto_codigo"]]
-                self.assertEqual(len(codes), 2)
+                codes = [field for field in fields if field.value == data["cod_prod"]]
+                self.assertEqual(len(codes), 1)
                 for code in codes:
                     self.assertGreaterEqual(code.y - 296, 4)
                     self.assertGreaterEqual(368 - code.bottom, 4)
@@ -146,8 +147,8 @@ class ZebraLayoutTests(unittest.TestCase):
             with self.subTest(client=data["cliente"], observation=data["observacao"]):
                 raw_fields = raw_text_fields(zpl)
                 values = {
-                    data["descricao"], data["produto_codigo"], data["cod_prod"],
-                    "COD:", "COD PROD:", "MEDIDAS:", data["medidas"],
+                    data["descricao"], data["oc"], data["cod_prod"],
+                    "OC:", "COD PROD:", "MEDIDAS:", data["medidas"],
                 }
                 for field in text_fields(zpl):
                     if field.value not in values:

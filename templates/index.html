@@ -83,8 +83,23 @@
                 <div class="editorSectionHeading"><span>01</span><div><h3>Produto e identificação</h3><p>Informações principais exibidas na etiqueta.</p></div></div>
                 <div class="editorSectionFields">
               <div>
+                <label for="qrBranch">Filial (E)</label>
+                <input id="qrBranch" value="" readonly aria-describedby="qrBranchHint" />
+                <small id="qrBranchHint">Usada no início do QR Code. Altere em Configurações.</small>
+              </div>
+              <div>
+                <label for="qrIdentifier">Identificador (I) — automático</label>
+                <input id="qrIdentifier" value="" readonly aria-describedby="qrIdentifierHint" />
+                <small id="qrIdentifierHint">Cada nova etiqueta recebe seu próprio identificador no QR Code.</small>
+              </div>
+              <div>
                 <label>Marca / Cliente (faixa preta)</label>
                 <input name="cliente" value="AMAZONTAPE" />
+              </div>
+
+              <div>
+                <label for="oc">OC (Cliente)</label>
+                <input id="oc" name="oc" value="" maxlength="80" placeholder="Informe o OC do cliente" />
               </div>
 
               <div>
@@ -144,8 +159,8 @@
                 <label>Lote de fabricação (L)</label>
                 <input
                   name="lote_base"
-                  value="4016/2026"
-                  placeholder="4016/2026"
+                  value="12/12/2026"
+                  placeholder="DD/MM/AAAA"
                 />
               </div>
 
@@ -364,10 +379,10 @@
                   <!-- ==================== CÓDIGOS ==================== -->
                   <div class="codRow">
                     <div class="codMain">
-                      <span class="codLabelMain">COD:</span>
+                      <span class="codLabelMain">OC:</span>
                       <span
                         class="codValueMain"
-                        data-out="produto_codigo"
+                        data-out="oc"
                       ></span>
                     </div>
 
@@ -819,7 +834,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=29"
+      src="/static/app.js?v=34"
       defer
     ></script>
   </body>

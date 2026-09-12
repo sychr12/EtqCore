@@ -174,7 +174,7 @@ class ApiTests(unittest.TestCase):
         zpl_with = make_zpl(with_client, 1, "TB0000000001", qr_payload(with_client, "TB0000000001"), settings)
         self.assertIn("^FO700,28^GB72,424,72,B,0^FS", zpl_with)
         self.assertIn("^FDAMAZONTAPE^FS", zpl_with)
-        self.assertIn("^FD2026/4016^FS", zpl_with)
+        self.assertIn("^FD4016/2026^FS", zpl_with)
         self.assertIn("^FD910 pcs^FS", zpl_with)
 
     def test_windows_folder_picker_returns_selected_path(self) -> None:

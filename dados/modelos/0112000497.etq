@@ -1,0 +1,22 @@
+{
+  "tipo_arquivo": "etiqueta-zebra-editavel",
+  "versao": 1,
+  "dados": {
+    "cliente": "",
+    "oc": "",
+    "tipo": "MP",
+    "produto_codigo": "0112000497",
+    "cod_prod": "",
+    "descricao": "TUBO SULAMERICANA-1650MM X 3X2,5MM-CAPA BRANCA - 10 ANOS",
+    "lote_controle": "123",
+    "lote_base": "",
+    "quantidade": "300",
+    "unidade": "UN",
+    "operador": "",
+    "medidas": "1650MM X 3X2,5MM",
+    "fabricacao": "",
+    "validade": "",
+    "dpd": "",
+    "observacao": ""
+  }
+}

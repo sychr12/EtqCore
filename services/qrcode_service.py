@@ -13,9 +13,14 @@ from .texto import quantity_x1000
 
 def qr_payload(data: dict, identifier: str, branch: str = "04") -> str:
     """Organiza os campos no formato esperado pelo leitor da produção."""
+    description = clean(data.get("descricao"))
+    measurements = clean(data.get("medidas"))
+    # As medidas fazem parte de (D), sem repetir as já escritas na descrição.
+    if measurements and measurements.casefold() not in description.casefold():
+        description = " ".join(part for part in (description, measurements) if part)
     return (
         f"(E){clean(branch)}(T){clean(data.get('tipo'))}(P){clean(data.get('produto_codigo'))}"
-        f"(D){clean(data.get('descricao'))}(S){clean(data.get('lote_controle'))}"
+        f"(D){description}(S){clean(data.get('lote_controle'))}"
         f"(Q){quantity_x1000(data.get('quantidade'))}(Y){clean(data.get('dpd'))}"
         f"(I){identifier}(U){clean(data.get('unidade'))}(L){clean(data.get('lote_base'))}"
     )

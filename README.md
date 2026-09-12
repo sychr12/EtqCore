@@ -76,6 +76,8 @@ sempre recebe o próximo contador disponível.
 
 A filial é editável em **Configurações** e alimenta o campo `(E)` do QR.
 Campos do QR: `(E)...(T)...(P)...(D)...(S)...(Q)...(Y)...(I)...(U)...(L)...`.
+O campo `(D)` contém a descrição e as medidas, separadas por um espaço. Se as medidas
+já estiverem na descrição, elas não são repetidas.
 A quantidade de entrada é multiplicada por 1000 no QR.
 
 O tamanho da fonte é calculado novamente para cada etiqueta, considerando as

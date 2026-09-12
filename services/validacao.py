@@ -12,6 +12,7 @@ from .texto import clean
 # Limites evitam textos enormes e trabalhos ZPL inválidos.
 LABEL_LIMITS = {
     "cliente": 80,
+    "oc": 80,
     "tipo": 40,
     "produto_codigo": 80,
     "cod_prod": 80,
