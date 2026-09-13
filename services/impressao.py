@@ -20,7 +20,10 @@ def installed_printers() -> list[str]:
             ("Attributes", wintypes.DWORD),
         ]
 
-    winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+    try:
+        winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+    except OSError:
+        return []
     enum_printers = winspool.EnumPrintersW
     enum_printers.argtypes = [
         wintypes.DWORD, wintypes.LPWSTR, wintypes.DWORD,
@@ -32,7 +35,10 @@ def installed_printers() -> list[str]:
     flags = 0x00000002 | 0x00000004  # PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS
     needed = wintypes.DWORD()
     returned = wintypes.DWORD()
-    enum_printers(flags, None, 4, None, 0, ctypes.byref(needed), ctypes.byref(returned))
+    try:
+        enum_printers(flags, None, 4, None, 0, ctypes.byref(needed), ctypes.byref(returned))
+    except (OSError, ValueError):
+        return []
     if not needed.value:
         return []
 
@@ -55,11 +61,17 @@ def _printer_can_open(name: str) -> bool:
     """Confere diretamente com o spooler, inclusive nomes UNC salvos."""
     if os.name != "nt" or not name.strip():
         return False
-    winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
-    handle = ctypes.c_void_p()
-    if not winspool.OpenPrinterW(ctypes.c_wchar_p(name.strip()), ctypes.byref(handle), None):
+    try:
+        winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
+    except OSError:
         return False
-    winspool.ClosePrinter(handle)
+    handle = ctypes.c_void_p()
+    try:
+        if not winspool.OpenPrinterW(ctypes.c_wchar_p(name.strip()), ctypes.byref(handle), None):
+            return False
+        winspool.ClosePrinter(handle)
+    except (OSError, ValueError):
+        return False
     return True
 
 
@@ -107,6 +119,14 @@ def raw_print(printer: str, content: str) -> str:
     """Envia bytes ZPL puros, sem o Windows redesenhar ou redimensionar a etiqueta."""
     if os.name != "nt":
         raise RuntimeError("Impressão direta está disponível apenas no Windows.")
+    if not isinstance(content, str):
+        raise TypeError("O conteúdo da etiqueta deve ser texto ZPL.")
+    try:
+        # Codifique antes de abrir o handle para uma entrada inválida nunca
+        # deixar um documento aberto no spooler.
+        payload = content.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError("O conteúdo da etiqueta contém caracteres inválidos.") from exc
     printer = resolve_printer(printer)
     winspool = ctypes.WinDLL("winspool.drv", use_last_error=True)
     handle = ctypes.c_void_p()
@@ -118,10 +138,6 @@ def raw_print(printer: str, content: str) -> str:
 
     # RAW é essencial: um driver gráfico poderia mudar margens e tamanhos.
     doc = DOC_INFO_1("Etiqueta Zebra", None, "RAW")
-    # O ZPL gerado declara ^CI28 (UTF-8, ver services/zpl.py). Os bytes
-    # enviados precisam usar o mesmo encoding, senão acentos (Ç, Ã, Á...)
-    # chegam corrompidos ou somem — não use cp850 aqui.
-    payload = content.encode("utf-8")
     document_started = False
     try:
         if not winspool.StartDocPrinterW(handle, 1, ctypes.byref(doc)):

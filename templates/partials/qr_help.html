@@ -1,0 +1,54 @@
+<details class="qrHelp" id="qrHelp">
+  <summary>Entenda os campos do QR Code — explicação completa</summary>
+  <div class="qrHelpBody">
+    <p>O QR Code guarda um texto que pode ser recuperado por um leitor. Cada marcador entre parênteses identifica o valor que vem logo depois dele, até o próximo marcador. Por exemplo, <code>(E)04(T)MP</code> significa estabelecimento <strong>04</strong> e tipo de material <strong>MP</strong>.</p>
+
+    <h3>Os dez campos, na ordem de leitura</h3>
+    <div class="qrHelpTable" role="region" aria-label="Campos do QR Code" tabindex="0">
+      <table>
+        <thead><tr><th scope="col">Campo</th><th scope="col">O que significa e como preencher</th><th scope="col">Exemplo</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>(E)</code></th><td><strong>Estabelecimento.</strong> Identifica a filial ou unidade. O valor inicial vem das Configurações e pode ser alterado no formulário para a etiqueta atual.</td><td><code>04</code></td></tr>
+          <tr><th scope="row"><code>(T)</code></th><td><strong>Tipo do material.</strong> Digite a classificação usada pela sua empresa. É opcional; se não for preenchido, o marcador permanece.</td><td><code>MP</code></td></tr>
+          <tr><th scope="row"><code>(P)</code></th><td><strong>Código do produto.</strong> Recebe o campo “Código do produto (P)”, preservando inclusive zeros à esquerda. É obrigatório.</td><td><code>2000000444</code></td></tr>
+          <tr><th scope="row"><code>(D)</code></th><td><strong>Descrição e medidas.</strong> A descrição é obrigatória. As medidas são acrescentadas com um espaço entre os textos; se já estiverem escritas exatamente na descrição, não são repetidas.</td><td>TUBETE ADELBRAS 711 76,5 x 2,5 x 18mm</td></tr>
+          <tr><th scope="row"><code>(S)</code></th><td><strong>Sequência ou selo.</strong> Recebe o valor do campo “Sequência / selo (S)”. Pode conter o código de controle usado pela produção e é obrigatório. Esse valor é digitado por você.</td><td><code>BC</code></td></tr>
+          <tr><th scope="row"><code>(Q)</code></th><td><strong>Quantidade.</strong> Recebe a quantidade digitada multiplicada por 1.000. É obrigatória e deve ser maior que zero. O número de etiquetas a imprimir é um controle separado.</td><td><code>910000</code>, para quantidade 910</td></tr>
+          <tr><th scope="row"><code>(Y)</code></th><td><strong>DPD / rastreabilidade adicional.</strong> Recebe o texto digitado nesse campo, quando a produção precisar dessa informação. É opcional e não aparece como texto na arte da etiqueta.</td><td><code>(Y)</code> quando vazio</td></tr>
+          <tr><th scope="row"><code>(I)</code></th><td><strong>Identificador da etiqueta.</strong> É preenchido automaticamente com o prefixo configurado e a sequência do sistema. Cada nova etiqueta recebe seu próprio identificador; ele não é fixado pelo exemplo desta explicação.</td><td><code>TB0000000006</code></td></tr>
+          <tr><th scope="row"><code>(U)</code></th><td><strong>Unidade.</strong> Informe a unidade da quantidade, como peças, unidades ou metros, usando a sigla adotada pela sua empresa. É obrigatória.</td><td><code>pcs</code>, <code>UN</code> ou <code>m</code></td></tr>
+          <tr><th scope="row"><code>(L)</code></th><td><strong>Lote ou data.</strong> Recebe exatamente o lote ou a data informada nesse campo. Para uma data, use dia/mês/ano. É opcional.</td><td><code>12/12/2026</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Exemplo completo</h3>
+    <p>Com tipo MP, código 2000000444, descrição TUBETE ADELBRAS 711, medidas 76,5 x 2,5 x 18mm, selo BC, quantidade 910, unidade pcs e lote 12/12/2026, o conteúdo fica assim. Neste exemplo, o DPD está vazio e o identificador é ilustrativo:</p>
+    <pre class="qrHelpExample" tabindex="0" aria-label="Exemplo do conteúdo em uma única linha"><code>(E)04(T)MP(P)2000000444(D)TUBETE ADELBRAS 711 76,5 x 2,5 x 18mm(S)BC(Q)910000(Y)(I)TB0000000006(U)pcs(L)12/12/2026</code></pre>
+    <p>Este exemplo explica o formato; ele não altera os dados do formulário nem o contador.</p>
+
+    <h3>Quantidade e numeração são coisas diferentes</h3>
+    <p>Ao digitar <strong>910</strong> em Quantidade, a etiqueta mostra 910 e o QR grava <code>(Q)910000</code>. Se digitar <strong>95,5</strong>, o QR grava <code>(Q)95500</code>. Você pode usar vírgula decimal, como 95,5, ou ponto decimal, como 95.5. A quantidade aceita até três casas decimais.</p>
+    <p>O controle <strong>Nº de etiquetas</strong> define quantas etiquetas serão geradas. Em um lote de impressão, cada uma recebe um <code>(I)</code> diferente, enquanto a quantidade do produto em <code>(Q)</code> continua sendo a que você informou.</p>
+    <p>A prévia e o arquivo editável <strong>.etq</strong> não consomem numeração. Gerar um <strong>.prn</strong> ou enviar uma nova impressão reserva o identificador. Uma falha de impressão não devolve automaticamente esse número.</p>
+
+    <h3>Campos vazios e preservação do texto</h3>
+    <p>A ordem é sempre <code>(E)(T)(P)(D)(S)(Q)(Y)(I)(U)(L)</code>. Campos opcionais vazios mantêm seus marcadores: <code>(T)(P)</code> indica tipo vazio; <code>(Y)(I)</code> indica DPD vazio; e <code>(L)</code> no final indica lote vazio. Os campos obrigatórios precisam ser preenchidos antes da geração.</p>
+    <p>O texto gravado tem uma única linha. Acentos, letras maiúsculas e minúsculas, zeros à esquerda, parênteses, hífens, vírgulas, símbolos e espaços internos são preservados. Espaços antes e depois dos valores são aparados. Quebras de linha e caracteres de controle precisam ser removidos do campo para gerar o QR.</p>
+    <p>Ao abrir uma etiqueta salva, os campos ausentes no arquivo ficam vazios, evitando valores do produto anterior. Arquivos antigos sem estabelecimento usam a filial das Configurações. Se os dados ficarem inválidos durante a edição, a prévia anterior do QR é retirada até que sejam corrigidos.</p>
+
+    <h3>O que aparece na etiqueta e o que entra no QR</h3>
+    <p>A arte impressa e o conteúdo do QR têm funções distintas. Um campo do QR continua sendo gravado mesmo quando não aparece como texto na etiqueta, como tipo, sequência/selo e DPD.</p>
+    <p>Conforme o formato definido para este sistema, <strong>cliente, OC, código interno do produto, operador, fabricação, validade e observação</strong> permanecem na etiqueta/histórico e não criam campos adicionais no QR. O código interno também não substitui o código do produto em <code>(P)</code>.</p>
+    <p>A <strong>validade</strong> aparece com a data completa na etiqueta, mas não é copiada automaticamente para <code>(L)</code>. O campo <code>(L)</code> contém somente o lote ou a data que você digitar nele.</p>
+
+    <h3>Como conferir uma etiqueta</h3>
+    <ol>
+      <li>Preencha os dados e confira o estabelecimento, o identificador automático e a prova antes de imprimir.</li>
+      <li>Gere a etiqueta e envie para a impressora configurada.</li>
+      <li>Escaneie a etiqueta impressa com um leitor que mostre o texto completo do QR.</li>
+      <li>Confira a ordem dos dez marcadores, a descrição com as medidas, a quantidade multiplicada por 1.000, o identificador e o lote.</li>
+      <li>Confirme que os campos opcionais vazios mantiveram seus marcadores. Uma leitura correta do arquivo digital não substitui essa conferência da impressão física.</li>
+    </ol>
+  </div>
+</details>

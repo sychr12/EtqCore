@@ -74,11 +74,38 @@ Ao iniciar, o formulário recupera automaticamente os dados da etiqueta mais
 recente do histórico. Isso não reutiliza o identificador: uma nova geração
 sempre recebe o próximo contador disponível.
 
-A filial é editável em **Configurações** e alimenta o campo `(E)` do QR.
+A filial de **Configurações** é o valor inicial do estabelecimento `(E)`.
+Ela também pode ser preenchida por etiqueta no formulário e fica salva no `.etq`
+e no histórico. Arquivos antigos, sem esse campo, usam a filial configurada.
 Campos do QR: `(E)...(T)...(P)...(D)...(S)...(Q)...(Y)...(I)...(U)...(L)...`.
 O campo `(D)` contém a descrição e as medidas, separadas por um espaço. Se as medidas
-já estiverem na descrição, elas não são repetidas.
-A quantidade de entrada é multiplicada por 1000 no QR.
+já estiverem exatamente na descrição, elas não são repetidas.
+
+| Campo | Conteúdo |
+| --- | --- |
+| E | Código do estabelecimento |
+| T | Tipo do material |
+| P | Código do produto |
+| D | Descrição e medidas |
+| S | Sequência / selo |
+| Q | Quantidade multiplicada por 1000 |
+| Y | DPD / rastreabilidade adicional |
+| I | Identificador automático e único de cada etiqueta |
+| U | Unidade |
+| L | Lote ou data informada |
+
+Os dez marcadores sempre permanecem nessa ordem, incluindo valores vazios.
+O QR tem uma única linha. Espaços externos dos campos são aparados; acentos,
+parênteses, hífens, vírgulas, símbolos e espaços internos são preservados.
+Quebras de linha e caracteres de controle são rejeitados com uma mensagem,
+em vez de serem substituídos silenciosamente. A proteção dos comandos de texto
+ZPL continua separada do conteúdo codificado na imagem do QR.
+
+Cliente, OC, código interno, operador, fabricação, validade e observação
+continuam na etiqueta/histórico, sem criar outros campos no QR.
+Abrir uma etiqueta salva limpa os campos ausentes, evitando valores herdados
+do produto anterior. Uma edição ou erro invalida a imagem anterior do QR;
+respostas atrasadas da prévia não substituem o conteúdo atual.
 
 O tamanho da fonte é calculado novamente para cada etiqueta, considerando as
 dimensões configuradas e a quantidade de texto. A prévia e o ZPL usam a maior

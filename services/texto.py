@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
+import re
 import unicodedata
 
 
@@ -33,15 +34,29 @@ def zpl_text(value: object) -> str:
 
 def quantity_x1000(raw: object) -> str:
     """Converte a quantidade para o valor inteiro exigido dentro do QR."""
-    value = clean(raw).replace(" ", "")
+    # Não use ``clean`` aqui: ^ e ~ são removidos por essa função por serem
+    # comandos ZPL, mas na quantidade isso transformaria uma entrada inválida
+    # como ``1^2`` em 12. A quantidade precisa ser um número explícito.
+    value = "" if raw is None else str(raw).strip()
+    if any(unicodedata.category(char) in {"Cc", "Cs", "Zl", "Zp"} for char in value):
+        raise ValueError("Quantidade inválida.")
+    value = value.replace(" ", "")
     if not value:
         raise ValueError("Informe a quantidade.")
     # Aceita 95,5; 95.5; 1.234,5; e inteiros.
     if "," in value:
+        if not re.fullmatch(r"[+-]?(?:\d+|\d{1,3}(?:\.\d{3})+),\d+", value):
+            raise ValueError("Quantidade inválida.")
         value = value.replace(".", "").replace(",", ".")
+    elif not re.fullmatch(r"[+-]?\d+(?:\.\d+)?", value):
+        raise ValueError("Quantidade inválida.")
     try:
-        result = Decimal(value) * Decimal(1000)
-    except InvalidOperation as exc:
+        # A precisão acompanha o tamanho da entrada, evitando que o contexto
+        # padrão arredonde valores longos ou aceite expoentes descomunais.
+        with localcontext() as context:
+            context.prec = max(28, len(value) + 12)
+            result = Decimal(value) * Decimal(1000)
+    except (InvalidOperation, ValueError, OverflowError) as exc:
         raise ValueError("Quantidade inválida.") from exc
     if not result.is_finite() or result <= 0:
         raise ValueError("A quantidade deve ser um número maior que zero.")

@@ -3919,3 +3919,23 @@ nav.workspaceNav {
 .label .bottomRow > .observationBox { min-width: 0; gap: 1cqh; }
 .label .bottomRow .observationLabel { font-size: 1.65cqw; }
 .label .bottomRow .observationValue { font-size: 1.7cqw; line-height: 1.2; overflow-wrap: anywhere; }
+
+/* Ajuda do formulário; não participa da arte da etiqueta. */
+.qrHelp { min-width: 0; margin: 16px 0; border: 1px solid #c5d6df; border-radius: 10px; background: #f7fafc; color: #243f50; }
+.qrHelp > summary { padding: 14px 16px; cursor: pointer; font-size: 14px; font-weight: 700; line-height: 1.5; }
+.qrHelp > summary:focus-visible { outline: 3px solid #12a58a; outline-offset: 2px; border-radius: 10px; }
+.qrHelp[open] > summary { border-bottom: 1px solid #c5d6df; }
+.qrHelpBody { min-width: 0; padding: 4px 16px 16px; font-size: 13px; line-height: 1.65; }
+.qrHelpBody h3 { margin: 22px 0 8px; font-size: 15px; color: #123a50; }
+.qrHelpBody p { margin: 12px 0; }
+.qrHelpBody code { font-family: Consolas, monospace; font-size: .95em; }
+.qrHelpBody ol { padding-left: 22px; }
+.qrHelpBody li + li { margin-top: 8px; }
+.qrHelpTable { max-width: 100%; overflow-x: auto; border: 1px solid #d7e2e8; border-radius: 6px; }
+.qrHelpTable table { width: 100%; min-width: 460px; border-collapse: collapse; font-size: 12px; white-space: normal; }
+.qrHelpTable th, .qrHelpTable td { padding: 10px; text-align: left; vertical-align: top; border-bottom: 1px solid #d7e2e8; white-space: normal; }
+.qrHelpTable thead th { position: static; background: #eaf1f5; color: #123a50; }
+.qrHelpTable tbody th { width: 48px; }
+.qrHelpTable tbody tr:last-child > * { border-bottom: 0; }
+.qrHelpExample { max-width: 100%; overflow-x: auto; padding: 12px; border: 1px solid #d7e2e8; border-radius: 6px; background: #fff; color: #172f40; white-space: pre; font-size: 12px; }
+@media print { .qrHelp { display: none !important; } }

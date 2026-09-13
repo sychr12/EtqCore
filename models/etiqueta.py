@@ -12,6 +12,15 @@ from .database import db
 from config import BACKUP_DIR
 
 
+def _dados_json(raw: object) -> dict:
+    """Lê dados antigos sem derrubar histórico/relatórios por uma linha ruim."""
+    try:
+        dados = json.loads(raw) if isinstance(raw, str) else {}
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return dados if isinstance(dados, dict) else {}
+
+
 def obter_ultima() -> sqlite3.Row | None:
     """Busca os dados da etiqueta mais recente para restaurar o formulário."""
     with closing(db()) as con:
@@ -64,7 +73,7 @@ def listar_historico(limite: int = 200) -> list[dict]:
     resultado = []
     for row in rows:
         item = dict(row)
-        item["dados"] = json.loads(item.pop("dados_json"))
+        item["dados"] = _dados_json(item.pop("dados_json"))
         resultado.append(item)
     return resultado
 
@@ -82,7 +91,7 @@ def listar_por_periodo(ano: int, mes: int) -> list[dict]:
     resultado = []
     for row in rows:
         item = dict(row)
-        item["dados"] = json.loads(item.pop("dados_json"))
+        item["dados"] = _dados_json(item.pop("dados_json"))
         resultado.append(item)
     return resultado
 
@@ -98,7 +107,7 @@ def listar_por_ano(ano: int) -> list[dict]:
     resultado = []
     for row in rows:
         item = dict(row)
-        item["dados"] = json.loads(item.pop("dados_json"))
+        item["dados"] = _dados_json(item.pop("dados_json"))
         resultado.append(item)
     return resultado
 

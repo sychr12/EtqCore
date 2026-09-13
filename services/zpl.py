@@ -179,10 +179,10 @@ def _stat_cell(
     label_offset = max(0, int(label_offset))
     value_offset = max(0, int(value_offset))
     label_y = y + pad // 2 + label_offset
-    value_y = max(y + label_h + value_offset, label_y + label_h + max(4, pad // 5))
+    value_y = max(y + label_h + value_offset, label_y + label_h + pad // 6 - 2)
     # O deslocamento consome espaço: mantém a margem inferior mesmo quando
     # um valor é baixado para ficar alinhado aos campos vizinhos.
-    value_h = max(12, y + h - pad // 2 - value_y)
+    value_h = max(12, y + h - max(3, pad // 4) - value_y)
 
     z.text(
         x + pad,
@@ -360,25 +360,15 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     table_x0 = cx0 + qr_w
     table_w = cw - qr_w
 
-    # O QR ocupa TODO o quadrado disponível.
-    # O render_bitmap pode gerar uma margem branca (quiet zone); recortamos
-    # essa margem e redimensionamos novamente para preencher a área inteira.
-    # Reduz o QR levemente (96% da área), mantendo-o centralizado.
+    # O QR ocupa o quadrado de 202 dots aprovado para a etiqueta de 100 mm.
+    # A matriz é gerada diretamente nesse tamanho, sem recorte ou reescala
+    # posterior que possa deformar os módulos.
     qr_area = min(qr_w, top_h)
-    qr_size = max(1, int(qr_area * 0.96))
-    qr_x = cx0 + (qr_w - qr_size) // 2
-    qr_y = cy0 + (top_h - qr_size) // 2
+    qr_size = max(1, qr_area - 2)
+    qr_x = cx0
+    qr_y = cy0
 
     qr_img = render_bitmap(qr, qr_size).convert("L")
-
-    # Remove somente a borda branca externa criada pelo gerador do QR.
-    inverted = ImageOps.invert(qr_img)
-    bbox = inverted.getbbox()
-    if bbox:
-        qr_img = qr_img.crop(bbox)
-
-    # NEAREST mantém os módulos do QR perfeitamente quadrados/nítidos.
-    qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.NEAREST)
 
     z.raw("^FXQR^FS")
     z.bitmap(qr_x, qr_y, qr_img)
@@ -428,15 +418,15 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     # Mantém apenas uma pequena folga das linhas superior e inferior.
     title_gap = max(2, mmh(0.004))
     # Desce a descrição só um pouco para afastá-la da linha superior.
-    title_drop = max(8, mmh(0.016))
+    title_drop = max(6, mmh(0.012))
     title_inner_y = title_y + border + title_gap + title_drop
     # Mantém altura suficiente para a fonte ficar grande mesmo com o pequeno deslocamento.
-    title_inner_h = max(1, title_h - border - title_gap - title_drop)
+    title_inner_h = max(1, title_h - border - title_gap - title_drop - 4)
     # Descrição do produto (ex.: TUBETE ALTEBRAS):
     # usa a maior fonte possível dentro da faixa e fica centralizada.
     title_pad = max(4, mmw(0.005))
     z.text(cx0 + title_pad, title_inner_y, cw - 2 * title_pad, title_inner_h, str(data.get("descricao") or ""),
-           max_font=title_inner_h, min_font=min(22, title_inner_h), align="C", bold=True)
+           max_font=max(1, title_inner_h - 4), min_font=min(22, title_inner_h), align="L", bold=True)
     z.line_h(cx0, title_y + title_h, cw, border)
 
     # --- Linha OC / COD PROD ------------------------------------------------------
@@ -448,12 +438,12 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     _stat_cell(z, cx0, cod_y, cod_main_w, cod_h, code_pad,
                "OC:", str(data.get("oc") or ""),
                label_font=38, value_font=78, label_ratio=0.24,
-               label_offset=4, value_offset=3, bold=False)
+               label_offset=4, value_offset=3, bold=True)
     z.line_v(cx0 + cod_main_w, cod_y, cod_h, border)
     _stat_cell(z, cx0 + cod_main_w, cod_y, cw - cod_main_w, cod_h, code_pad,
                "COD PROD:", str(data.get("cod_prod") or ""),
                label_font=38, value_font=78, label_ratio=0.24,
-               label_offset=4, value_offset=3, bold=False)
+               label_offset=4, value_offset=3, bold=True)
     z.line_h(cx0, cod_y + cod_h, cw, border)
 
     # --- Linha inferior: MEDIDAS/OBSERVAÇÃO + logo -----------------------------------
@@ -488,11 +478,11 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     measures_text_w = max(1, cx0 + medidas_w - footer_pad_x - measures_text_x)
 
     z.text(measures_text_x, footer_top, measures_text_w, measures_label_h,
-           "MEDIDAS:", max_font=24, min_font=12, bold=False)
+           "MEDIDAS:", max_font=24, min_font=12, bold=True)
 
     z.text(measures_text_x, measures_value_y, measures_text_w,
            max(12, footer_bottom - measures_value_y), str(data.get("medidas") or ""),
-           max_font=42, min_font=14, width_ratio=0.72, bold=False)
+           max_font=42, min_font=14, width_ratio=0.62, bold=True)
     z.line_v(cx0 + medidas_w, bottom_y, bottom_h, border)
     if observacao:
         z.line_v(obs_x, bottom_y, bottom_h, border)

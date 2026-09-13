@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from pathlib import Path
+import tempfile
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -39,12 +41,24 @@ def testar_pasta(pasta: str | Path) -> Path:
     """Confirma que a pasta local ou de rede existe e aceita gravação."""
     destino = Path(pasta).expanduser()
     destino.mkdir(parents=True, exist_ok=True)
-    teste = destino / ".etqcore-teste.tmp"
+    teste_nome = None
     try:
-        teste.write_text("teste", encoding="utf-8")
-        teste.unlink()
+        # Um nome temporário único evita que duas instâncias se sobrescrevam
+        # ou removam o arquivo de teste uma da outra.
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=destino, prefix=".etqcore-teste-",
+            suffix=".tmp", delete=False,
+        ) as arquivo:
+            arquivo.write("teste")
+            teste_nome = Path(arquivo.name)
     except OSError as exc:
         raise ValueError(f"Não foi possível gravar na pasta: {exc}") from exc
+    finally:
+        if teste_nome is not None:
+            try:
+                teste_nome.unlink(missing_ok=True)
+            except OSError:
+                pass
     return destino.resolve()
 
 
@@ -59,7 +73,10 @@ def escolher_pasta_windows(pasta_inicial: str | Path | None = None) -> str | Non
     inicial = Path(pasta_inicial).expanduser() if pasta_inicial else REPORTS_DIR
     if not inicial.exists():
         inicial = Path.home() / "Documents"
-    janela = tk.Tk()
+    try:
+        janela = tk.Tk()
+    except Exception as exc:
+        raise RuntimeError("O seletor de pastas do Windows não está disponível.") from exc
     janela.withdraw()
     janela.attributes("-topmost", True)
     try:
@@ -93,8 +110,8 @@ def _preencher_planilha(sheet, titulo: str, etiquetas: list[dict]) -> None:
     sheet.row_dimensions[1].height = 34
 
     indicadores = (("A3", "Total", len(etiquetas)),
-                    ("D3", "Sucesso", sum(1 for item in etiquetas if item["sucesso"])),
-                    ("G3", "Falhas", sum(1 for item in etiquetas if not item["sucesso"])))
+                    ("D3", "Sucesso", sum(1 for item in etiquetas if item.get("sucesso"))),
+                    ("G3", "Falhas", sum(1 for item in etiquetas if not item.get("sucesso"))))
     for celula, rotulo, valor in indicadores:
         sheet[celula] = rotulo
         sheet[celula].font = Font(bold=True, color="40566A")
@@ -115,19 +132,27 @@ def _preencher_planilha(sheet, titulo: str, etiquetas: list[dict]) -> None:
     sheet.row_dimensions[header_row].height = 30
 
     for item in etiquetas:
-        dados = item["dados"]
+        dados = item.get("dados") or {}
+        if not isinstance(dados, dict):
+            dados = {}
+        criada_em = item.get("criada_em", "")
         try:
-            data_hora = datetime.fromisoformat(item["criada_em"])
-        except ValueError:
-            data_hora = item["criada_em"]
+            data_hora = datetime.fromisoformat(str(criada_em))
+        except (TypeError, ValueError):
+            data_hora = criada_em
         sheet.append([
-            item["id"], item["contador"], item["identificador"], data_hora,
+            item.get("id", ""), item.get("contador", ""), item.get("identificador", ""), data_hora,
             dados.get("tipo", ""), dados.get("produto_codigo", ""), dados.get("cod_prod", ""),
             dados.get("descricao", ""), dados.get("lote_controle", ""), dados.get("lote_base", ""),
             dados.get("quantidade", ""), dados.get("unidade", ""), dados.get("operador", ""),
-            dados.get("medidas", ""), item["destino"], "Sucesso" if item["sucesso"] else "Falha",
-            item["erro"] or "", dados.get("observacao", ""),
+            dados.get("medidas", ""), item.get("destino", ""), "Sucesso" if item.get("sucesso") else "Falha",
+            item.get("erro") or "", dados.get("observacao", ""),
         ])
+        # Dados digitados que começam com =, +, - ou @ devem continuar sendo
+        # texto no Excel, nunca fórmulas executáveis.
+        for cell in sheet[sheet.max_row]:
+            if isinstance(cell.value, str):
+                cell.data_type = "s"
 
     final_row = max(header_row, sheet.max_row)
     sheet.auto_filter.ref = f"A{header_row}:R{final_row}"
@@ -159,7 +184,7 @@ def criar_relatorio_mensal(ano: int, mes: int, etiquetas: list[dict], pasta_base
     sheet.title = "Etiquetas"
     _preencher_planilha(sheet, f"RELATÓRIO DE ETIQUETAS — {MESES[mes - 1].upper()} DE {ano}", etiquetas)
 
-    workbook.save(destino)
+    _salvar_atomicamente(workbook, destino)
     return destino
 
 
@@ -186,8 +211,8 @@ def criar_relatorio_anual(ano: int, etiquetas: list[dict], pasta_base: str | Pat
     por_mes = {mes: [] for mes in range(1, 13)}
     for item in etiquetas:
         try:
-            mes = datetime.fromisoformat(item["criada_em"]).month
-        except ValueError:
+            mes = datetime.fromisoformat(str(item.get("criada_em", ""))).month
+        except (TypeError, ValueError):
             continue
         por_mes[mes].append(item)
     for mes in range(1, 13):
@@ -211,5 +236,24 @@ def criar_relatorio_anual(ano: int, etiquetas: list[dict], pasta_base: str | Pat
     resumo.column_dimensions["A"].width = 20
     for col in ("B", "C", "D"):
         resumo.column_dimensions[col].width = 15
-    workbook.save(destino)
+    _salvar_atomicamente(workbook, destino)
     return destino
+
+
+def _salvar_atomicamente(workbook: Workbook, destino: Path) -> None:
+    """Salva ao lado do destino e só o substitui quando o arquivo terminou."""
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    temporario = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            suffix=".xlsx.tmp", prefix=f".{destino.stem}-", dir=destino.parent, delete=False,
+        ) as arquivo:
+            temporario = Path(arquivo.name)
+        workbook.save(temporario)
+        os.replace(temporario, destino)
+    finally:
+        if temporario is not None:
+            try:
+                temporario.unlink(missing_ok=True)
+            except OSError:
+                pass

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
 
 from flask import Blueprint, Response, jsonify, request, send_file
@@ -21,9 +20,9 @@ from services.relatorio_excel import (
     escolher_pasta_windows,
     testar_pasta,
 )
-from services.texto import quantity_x1000
+from services.texto import qr_text, quantity_x1000
 from services.texto import dots
-from services.validacao import validate_label, validate_settings
+from services.validacao import integer_value, validate_label, validate_settings
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -39,7 +38,7 @@ def state():
         "proximo_identificador": identifier_for_counter(counter, cfg["prefixo_contador"]),
         "proximo_numero": visible_counter(counter),
         "ultima_etiqueta": (
-            {"identificador": last["identificador"], "dados": json.loads(last["dados_json"])} if last else None
+            {"identificador": last["identificador"], "dados": etiqueta_model._dados_json(last["dados_json"])} if last else None
         ),
     })
 
@@ -53,9 +52,12 @@ def report_periods():
 @api_bp.post("/relatorios/mensal")
 def create_monthly_report():
     """Cria a planilha dentro de dados/relatorios/ANO/MÊS."""
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
     try:
-        ano, mes = int(payload.get("ano")), int(payload.get("mes"))
+        if not isinstance(payload, dict):
+            raise ValueError("Envie o ano e o mês em formato JSON válido.")
+        ano = integer_value(payload.get("ano"), "Ano inválido.")
+        mes = integer_value(payload.get("mes"), "Mês inválido.")
         etiquetas = etiqueta_model.listar_por_periodo(ano, mes)
         pasta = config_model.obter_todas().get("pasta_relatorios")
         testar_pasta(pasta)
@@ -85,9 +87,11 @@ def download_monthly_report(ano: int, mes: int):
 @api_bp.post("/relatorios/anual")
 def create_annual_report():
     """Cria o consolidado do ano com resumo e abas dos meses utilizados."""
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
     try:
-        ano = int(payload.get("ano"))
+        if not isinstance(payload, dict):
+            raise ValueError("Envie o ano em formato JSON válido.")
+        ano = integer_value(payload.get("ano"), "Ano inválido.")
         if not 2000 <= ano <= 2100:
             raise ValueError("Ano inválido.")
         etiquetas = etiqueta_model.listar_por_ano(ano)
@@ -119,8 +123,10 @@ def download_annual_report(ano: int):
 @api_bp.post("/relatorios/pasta/testar")
 def test_reports_folder():
     """Testa uma pasta local ou compartilhada antes de salvar a configuração."""
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
     try:
+        if not isinstance(payload, dict):
+            raise ValueError("Informe a pasta dos relatórios.")
         pasta = str(payload.get("pasta") or "").strip()
         if not pasta:
             raise ValueError("Informe a pasta dos relatórios.")
@@ -133,7 +139,11 @@ def test_reports_folder():
 @api_bp.post("/relatorios/pasta/escolher")
 def choose_reports_folder():
     """Abre o seletor de pastas do Windows e devolve a escolha para a tela."""
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+    if payload is None:
+        payload = {}
+    elif not isinstance(payload, dict):
+        return jsonify({"erro": "Informe a pasta atual em formato JSON válido."}), 400
     atual = str(payload.get("pasta_atual") or config_model.obter_todas().get("pasta_relatorios") or "")
     try:
         escolha = escolher_pasta_windows(atual)
@@ -145,8 +155,10 @@ def choose_reports_folder():
 @api_bp.post("/relatorios/pasta/configurar")
 def configure_reports_folder():
     """Testa e salva somente o destino dos relatórios, sem alterar a impressora."""
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
     try:
+        if not isinstance(payload, dict):
+            raise ValueError("Escolha uma pasta para os relatórios.")
         pasta = str(payload.get("pasta") or "").strip()
         if not pasta:
             raise ValueError("Escolha uma pasta para os relatórios.")
@@ -201,6 +213,9 @@ def qr_svg():
         text = request.get_data(as_text=True)
         if not text or len(text) > 4096:
             raise ValueError("O conteúdo do QR deve ter entre 1 e 4096 caracteres.")
+        normalized = qr_text(text)
+        if normalized != text:
+            raise ValueError("O conteúdo do QR deve estar em uma única linha, sem espaços externos.")
         svg = render_svg(text)
         return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "no-store"})
     except (UnicodeError, ValueError) as exc:
@@ -218,10 +233,7 @@ def generate():
         destino = body.pop("destino", "download")
         if destino not in {"download", "imprimir", "impressora_comum"}:
             raise ValueError("Destino de geração inválido.")
-        try:
-            quantidade = int(body.pop("quantidade_etiquetas", 1))
-        except (TypeError, ValueError) as exc:
-            raise ValueError("Quantidade de etiquetas inválida.") from exc
+        quantidade = integer_value(body.pop("quantidade_etiquetas", 1), "Quantidade de etiquetas inválida.")
         if not 1 <= quantidade <= 1000:
             raise ValueError("A quantidade de etiquetas deve ficar entre 1 e 1000.")
 
@@ -349,10 +361,12 @@ def clear_latest_history():
 def clear_history_range():
     """Apaga contadores dentro de um intervalo e posiciona o contador exatamente."""
     try:
-        data = request.get_json(silent=True) or {}
-        inicio = int(data.get("inicio"))
-        fim = int(data.get("fim"))
-        proximo = int(data.get("proximo"))
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("Preencha todos os números.")
+        inicio = integer_value(data.get("inicio"), "Início inválido.")
+        fim = integer_value(data.get("fim"), "Fim inválido.")
+        proximo = integer_value(data.get("proximo"), "Próximo número inválido.")
         etiqueta_model.validar_exclusao_intervalo(inicio, fim, proximo)
         backup = etiqueta_model.gerar_backup()
         total = etiqueta_model.apagar_intervalo(inicio, fim, proximo)

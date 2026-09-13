@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 import webbrowser
 
-from flask import Flask
+from flask import Flask, jsonify, request
 
 from config import HOST, PORT
 from controllers.paginas_controller import paginas_bp
@@ -18,6 +18,15 @@ def create_app() -> Flask:
     init_db()
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+
+    @app.errorhandler(413)
+    def request_too_large(error):
+        # As APIs are consumed with response.json() by the interface, a
+        # default HTML error page would become a misleading JSON parse error.
+        if request.path.startswith("/api/"):
+            return jsonify({"erro": "A requisição é grande demais (limite de 1 MB)."}), 413
+        return error
+
     app.register_blueprint(paginas_bp)
     app.register_blueprint(api_bp)
     return app

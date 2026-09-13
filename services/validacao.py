@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 
 from config import REPORTS_DIR
 
@@ -44,6 +45,24 @@ REQUIRED_LABEL_FIELDS = {
 }
 
 
+def integer_value(value: object, message: str) -> int:
+    """Lê inteiros sem truncar decimais nem aceitar booleanos como números."""
+    if type(value) is int:
+        return value
+    if isinstance(value, str) and re.fullmatch(r"[+-]?[0-9]+", value.strip()):
+        try:
+            return int(value)
+        except ValueError:
+            pass
+    raise ValueError(message)
+
+
+def _scalar(value: object, field: str) -> object:
+    if value is not None and type(value) not in (str, int, float):
+        raise ValueError(f"O campo {field.replace('_', ' ')} deve conter texto ou um número.")
+    return value
+
+
 def validate_label(body: object) -> dict[str, str]:
     """Limpa os campos, confere obrigatórios e valida a quantidade."""
     if not isinstance(body, dict):
@@ -55,7 +74,7 @@ def validate_label(body: object) -> dict[str, str]:
         if key == "filial" and key not in body:
             continue
         try:
-            result[key] = (qr_text if key in QR_LABEL_FIELDS else clean)(body.get(key))
+            result[key] = (qr_text if key in QR_LABEL_FIELDS else clean)(_scalar(body.get(key), key))
         except ValueError as exc:
             raise ValueError(f"Campo {key.replace('_', ' ')}: {exc}") from exc
     for key, label in REQUIRED_LABEL_FIELDS.items():
@@ -78,12 +97,12 @@ def validate_settings(body: object) -> dict[str, str]:
     try:
         width = float(str(body.get("largura_mm", "")).replace(",", "."))
         height = float(str(body.get("comprimento_mm", "")).replace(",", "."))
-        dpi = int(body.get("dpi", 203))
-        speed = int(body.get("velocidade_ips", 3))
-        darkness = int(body.get("tonalidade", 10))
+        dpi = integer_value(body.get("dpi", 203), "DPI inválido.")
+        speed = integer_value(body.get("velocidade_ips", 3), "Velocidade inválida.")
+        darkness = integer_value(body.get("tonalidade", 10), "Tonalidade inválida.")
         offset_x = float(str(body.get("deslocamento_x_mm", 0)).replace(",", "."))
         offset_y = float(str(body.get("deslocamento_y_mm", 0)).replace(",", "."))
-    except ValueError as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError("Dimensões ou DPI inválidos.") from exc
     if not math.isfinite(width) or not math.isfinite(height):
         raise ValueError("Dimensões ou DPI inválidos.")
@@ -99,14 +118,16 @@ def validate_settings(body: object) -> dict[str, str]:
         raise ValueError("A tonalidade deve ficar entre 0 e 30.")
     if not all(math.isfinite(value) and -10 <= value <= 10 for value in (offset_x, offset_y)):
         raise ValueError("Os deslocamentos devem ficar entre -10 e 10 mm.")
-    branch = qr_text(body.get("filial"))
+    branch = qr_text(_scalar(body.get("filial"), "filial"))
     if not branch or len(branch) > 10:
         raise ValueError("Informe uma filial com até 10 caracteres.")
-    printer = clean(body.get("impressora"))
-    reports_folder = str(body.get("pasta_relatorios") or REPORTS_DIR).strip()
-    prefix = qr_text(body.get("prefixo_contador")) or "TB"
+    printer = clean(_scalar(body.get("impressora"), "impressora"))
+    reports_folder = str(_scalar(body.get("pasta_relatorios"), "pasta_relatorios") or REPORTS_DIR).strip()
+    prefix = qr_text(_scalar(body.get("prefixo_contador"), "prefixo_contador")) or "TB"
     if len(prefix) > 8:
         raise ValueError("O prefixo do contador aceita no máximo 8 caracteres.")
+    if not re.fullmatch(r"[A-Za-z0-9]+", prefix):
+        raise ValueError("O prefixo do contador deve conter somente letras e números.")
     if len(printer) > 260:
         raise ValueError("O nome da impressora aceita no máximo 260 caracteres.")
     if not reports_folder or len(reports_folder) > 500 or "\x00" in reports_folder:

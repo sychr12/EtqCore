@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from reportlab.graphics import renderSVG
 from reportlab.graphics.barcode.qr import QrCodeWidget
 from reportlab.graphics.shapes import Drawing
@@ -63,7 +65,7 @@ def render_svg(text: str, size: int = 360) -> str:
 def render_bitmap(text: str, size: int) -> Image.Image:
     """
     Cria o QR preenchendo praticamente toda a área disponível,
-    mantendo apenas 1 módulo de margem branca.
+    ocupando a área quadrada pedida.
     """
 
     widget = QrCodeWidget(
@@ -75,8 +77,10 @@ def render_bitmap(text: str, size: int) -> Image.Image:
 
     modules = widget.qr.modules
 
-    # Margem pequena de apenas 1 módulo
-    border = 1
+    # A área do QR já está reservada separadamente no layout da etiqueta. A
+    # matriz é desenhada integralmente para que o tamanho solicitado seja
+    # determinístico e não haja reamostragem irregular dos módulos.
+    border = 0
 
     module_count = len(modules)
     count = module_count + (border * 2)
@@ -88,8 +92,12 @@ def render_bitmap(text: str, size: int) -> Image.Image:
         )
 
     # Calcula os limites para ocupar exatamente o tamanho disponível
+    # Use limites superiores (ceil) para que cada pixel siga exatamente a
+    # regra ``floor(pixel * módulos / tamanho)`` usada por leitores e pela
+    # prévia. Arredondar para o mais próximo desloca alguns módulos em
+    # tamanhos que não são múltiplos da matriz.
     edges = [
-        round(index * size / count)
+        math.ceil(index * size / count)
         for index in range(count + 1)
     ]
 

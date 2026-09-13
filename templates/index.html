@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Etiquetas Zebra</title>
-    <link rel="stylesheet" href="/static/style.css?v=78" />
+    <link rel="stylesheet" href="/static/style.css?v=79" />
   </head>
 
   <body>
@@ -240,6 +240,7 @@
             </form>
 
             <div id="qrFeedback" class="status" aria-live="polite"></div>
+            {% include 'partials/qr_help.html' %}
             <div class="editorFinishPanel">
             <div class="editorActionsHeading"><span>FINALIZAÇÃO</span><h3>Salvar, conferir ou imprimir</h3><p>Escolha uma ação para concluir a etiqueta.</p></div>
             <div class="actions projectActions">
@@ -835,7 +836,7 @@
          JAVASCRIPT
     ============================================================= -->
     <script
-      src="/static/app.js?v=36"
+      src="/static/app.js?v=37"
       defer
     ></script>
   </body>
