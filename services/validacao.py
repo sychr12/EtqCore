@@ -87,6 +87,7 @@ def validate_label(body: object) -> dict[str, str]:
     from .texto import quantity_x1000
 
     quantity_x1000(result["quantidade"])
+    result["incluir_qr"] = body.get("incluir_qr", True) is not False
     return result
 
 

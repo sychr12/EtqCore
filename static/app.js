@@ -14,7 +14,7 @@
 let cfg = {}, timer, qrUrl, historyCache = {}, lastPrintProfile = null, previewRevision = 0;
 let generationPending = false, confirmationPending = false, historyRevision = 0;
 const form = document.querySelector('#labelForm');
-const values = () => Object.fromEntries(new FormData(form));
+const values = () => { const data = Object.fromEntries(new FormData(form)); form.querySelectorAll('input[type="checkbox"][name]').forEach(el => { data[el.name] = el.checked; }); return data };
 const fmtDate = v => v ? v.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1') : '';
 const setText = (selector, value) => { const el = document.querySelector(selector); if (el) el.textContent = value ?? ''; return el };
 async function loadState(restoreLast = false) {
@@ -66,6 +66,8 @@ async function updatePreview() {
   const feedback = setText('#qrFeedback', '');
   document.querySelectorAll('[data-out]').forEach(el => { el.textContent = d[el.dataset.out] || ''; });
   const brandBand = document.querySelector('.brandBand');
+  const labelPreview = document.querySelector('#previewLabel');
+  if (labelPreview) labelPreview.classList.toggle('withoutQr', !d.incluir_qr);
   if (brandBand) brandBand.classList.toggle('isEmpty', !String(d.cliente || '').trim());
   const observationBox = document.querySelector('.observationBox');
   if (observationBox) observationBox.classList.toggle('isEmpty', !String(d.observacao || '').trim());
@@ -83,6 +85,12 @@ async function updatePreview() {
     const x = await r.json();
     if (revision !== previewRevision) return;
     if (!r.ok) throw new Error(x.erro || 'Confira os campos da etiqueta.');
+    if (!d.incluir_qr) {
+      document.querySelector('#qrIdentifier').value = x.identificador;
+      lastPrintProfile = x.impressao;
+      resizePreview();
+      return x;
+    }
     const qr = await fetch('/api/qr.svg', { method: 'POST', body: x.qr });
     if (revision !== previewRevision) return;
     if (!qr.ok) throw new Error('Não foi possível gerar a imagem do QR Code.');
@@ -116,7 +124,9 @@ function fillForm(data, refresh = true) {
   const complete = { filial: cfg.filial || '', ...data };
   // Um arquivo parcial não pode herdar tipo, DPD ou lote do produto anterior.
   for (const el of form.elements) {
-    if (el.name) el.value = complete[el.name] ?? '';
+    if (!el.name) continue;
+    if (el.type === 'checkbox') el.checked = complete[el.name] === undefined ? true : complete[el.name] !== false && complete[el.name] !== 'false';
+    else el.value = complete[el.name] ?? '';
   }
   clearTimeout(timer);
   ++previewRevision;

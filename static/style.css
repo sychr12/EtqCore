@@ -832,6 +832,9 @@ button.print {
     box-sizing: border-box;
 }
 
+.label.withoutQr .qr { display: none; }
+.label.withoutQr .dataTable { width: 100%; }
+
 .label .dataTable .cell {
     min-width: 0;
 
@@ -3412,6 +3415,10 @@ tbody tr:hover { background: #f2faf8; }
     color: #455f72;
     font-size: 10px;
 }
+#editor .editorSectionFields .qrToggleField { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+#editor .editorSectionFields .qrToggleField .checkboxLabel { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+#editor .editorSectionFields .qrToggleField input[type="checkbox"] { width: 18px; min-height: 18px; height: 18px; margin: 0; accent-color: #176b56; }
+#editor .editorSectionFields .qrToggleField small { color: #64748b; }
 #editor .editorSectionFields input,
 #editor .editorSectionFields textarea {
     min-height: 46px;

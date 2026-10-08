@@ -356,7 +356,8 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
 
     # --- Linha superior: QR + tabela 2x2 --------------------------------------------
     # Tipo e lote de controle pertencem somente ao conteúdo do QR Code.
-    qr_w = min(top_h, int(cw * 0.4))
+    include_qr = data.get("incluir_qr", True)
+    qr_w = min(top_h, int(cw * 0.4)) if include_qr else 0
     table_x0 = cx0 + qr_w
     table_w = cw - qr_w
 
@@ -368,10 +369,10 @@ def make_zpl(data: dict, counter: int, identifier: str, qr: str, cfg: dict[str, 
     qr_x = cx0
     qr_y = cy0
 
-    qr_img = render_bitmap(qr, qr_size).convert("L")
-
-    z.raw("^FXQR^FS")
-    z.bitmap(qr_x, qr_y, qr_img)
+    if include_qr:
+        qr_img = render_bitmap(qr, qr_size).convert("L")
+        z.raw("^FXQR^FS")
+        z.bitmap(qr_x, qr_y, qr_img)
 
     # Tabela 2x2: LOTE DE FABRICAÇÃO | DATA/VAL // QUANTIDADE | OPERADOR
     col_w = table_w // 2

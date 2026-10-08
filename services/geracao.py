@@ -32,7 +32,7 @@ def gerar_lote(body: dict, destino: str, quantidade_etiquetas: int) -> dict:
         itens = []
         for counter in range(first_counter, first_counter + quantidade_etiquetas):
             identifier = identifier_for_counter(counter, cfg["prefixo_contador"])
-            qr = qr_payload(body, identifier, cfg["filial"])
+            qr = qr_payload(body, identifier, cfg["filial"]) if body.get("incluir_qr", True) else ""
             zpl = make_zpl(body, counter, identifier, qr, cfg)
             itens.append({"contador": counter, "identificador": identifier, "qr": qr, "zpl": zpl})
         labels = etiqueta_model.inserir_lote(con, itens, destino, body)

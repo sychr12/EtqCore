@@ -188,7 +188,7 @@ def preview():
         cfg = config_model.obter_todas()
         counter = int(cfg["proximo_contador"])
         identifier = identifier_for_counter(counter, cfg["prefixo_contador"])
-        qr = qr_payload(body, identifier, cfg["filial"])
+        qr = qr_payload(body, identifier, cfg["filial"]) if body.get("incluir_qr", True) else ""
         return jsonify({
             "identificador": identifier,
             "numero": visible_counter(counter),
